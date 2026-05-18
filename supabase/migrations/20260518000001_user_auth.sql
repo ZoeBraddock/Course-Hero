@@ -26,8 +26,11 @@ alter table orders
 ADD CONSTRAINT orders_student_id_fkey
 FOREIGN KEY (student_id) REFERENCES public.profiles(id);
 
+alter table course
+alter column primary_instructor type uuid using primary_instructor::uuid;
+
 create table profile_course (
-  profile_id uuid not null references public.profile(id) on delete cascade,
+  profile_id uuid not null references public.profiles(id) on delete cascade,
   course_id  uuid not null references public.course(id)  on delete cascade,
   enrolled_at timestamptz not null default now(),
   course_instructor bool,
