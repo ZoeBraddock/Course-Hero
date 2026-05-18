@@ -1,6 +1,6 @@
 -- Create a table for public profiles
 alter table orders
-drop constraint orders_student_id_fkey
+drop constraint orders_student_id_fkey;
 
 drop table if exists public.student_course;
 drop table if exists public.instructor_course;
@@ -26,17 +26,17 @@ alter table orders
 ADD CONSTRAINT orders_student_id_fkey
 FOREIGN KEY (student_id) REFERENCES public.profiles(id);
 
-create table profile_course {
+create table profile_course (
   profile_id uuid not null references public.profile(id) on delete cascade,
   course_id  uuid not null references public.course(id)  on delete cascade,
   enrolled_at timestamptz not null default now(),
-  primary key (student_id, course_id)
   course_instructor bool,
-}
+  primary key (profile_id, course_id)
+);
 
 alter table course
 add constraint course_primary_instructor_fkey
-foreign key (primary_instructor) references public.profiles(id)
+foreign key (primary_instructor) references public.profiles(id);
 
 -- Grant the privileges roles need
 GRANT SELECT ON public.profiles TO anon;
