@@ -1,30 +1,28 @@
-import Image from "next/image";
+import { supabase } from '../lib/supabase'
 
-export default function Home() {
+export default async function Home() {
+  const { data: courses, error } = await supabase
+    .from('course')
+    .select('*')
+
+  if (error) {
+    return <main><p>Error loading courses: {error.message}</p></main>
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            Course Hero - Here to save you from course based admin!
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Sick of admin getting in the way of running a course? Well have we got the deal for you!
-            <br></br> <br></br> 
-            Course Hero is here to save you from course based admin! With our easy to use platform, you can say goodbye to the hassle of managing your course and hello to more time for teaching and learning. 
-            <br></br> <br></br>
-            Sign up now and experience the freedom of a course without admin!
-          </p>
+    <main>
+      <h1>Course Hero - Here to save you from course based admin!</h1><br></br>
+      <p>Sick of admin getting in the way of running a course? Well have we got the deal for you!</p><br></br>
+      <p>Course Hero is here to save you from course based admin! With our easy to use platform, you can say goodbye to the hassle of managing your course and hello to more time for teaching and learning.</p><br></br>
+      <p>Sign up now and experience the freedom of a course without admin!</p><br></br>
+
+      <h2>Courses</h2>
+      {courses.map((course) => (
+        <div key={course.id}>
+          <h3>{course.name}</h3>
+          <p>{course.description}</p>
         </div>
-      </main>
-    </div>
-  );
+      ))}
+    </main>
+  )
 }
