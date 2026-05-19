@@ -1,7 +1,7 @@
 -- Sample courses
-insert into public.course (title, description, primary_instructor, price)
+insert into public.course (title, description, name, price)
 values
   ('Introduction to Horse Care', 'Learn the fundamentals of caring for horses.', 'Dixie Normus', 299.00),
   ('Advanced Riding Techniques', 'Take your riding to the next level.', 'Phill McKracken', 499.00),
-  ('Horse Nutrition & Health', 'Everything you need to know about feeding and health.', 'Ben Dover', 199.00)
-  ('Horse Nutrition & Health', 'Everything you need to know about feeding and health.', 'Tess Tickles', 50.00);
+  ('Horse Nutrition & Health', 'Everything you need to know about feeding and health.', 'Ben Dover', 199.00),
+  ('Dressage for the strong', 'Strength and conditioning for dressage athletes', 'Tess Tickles', 50.00);
