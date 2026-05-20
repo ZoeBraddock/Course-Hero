@@ -1,3 +1,5 @@
+TIM WAS HERE 
+
 ## Testing locally
 
 Follow the supabase docs, install and run supabase locally to make sure your mirations are validate before you push
