@@ -1,0 +1,14 @@
+repos:
+  - repo: https://github.com/sqlfluff/sqlfluff
+    rev: 3.2.5
+    hooks:
+      - id: sqlfluff-lint
+        args: ["--dialect", "postgres"]
+      - id: sqlfluff-fix
+        args: ["--dialect", "postgres"]
+
+  - repo: https://github.com/sbdchd/squawk
+    rev: v2.0.0
+    hooks:
+      - id: squawk
+        files: migrations/.*\.sql$
