@@ -1,3 +1,4 @@
+import Link from 'next/dist/client/link'
 import { supabase } from '../lib/supabase'
 
 export default async function Home() {
@@ -24,9 +25,9 @@ export default async function Home() {
           Sick of admin getting in the way of running a course?  <br></br>
           Say goodbye to the hassle and hello to more time for teaching and learning.
         </p>
-        <button className="bg-indigo-500 hover:bg-indigo-400 text-white font-semibold px-8 py-3 rounded-full transition">
+        <Link href="/signup" className="bg-indigo-500 hover:bg-indigo-400 text-white font-semibold px-8 py-3 rounded-full transition">
           Sign Up Free
-        </button>
+        </Link>
       </section>
 
       {/* Courses Section */}
