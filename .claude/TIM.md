@@ -2,4 +2,4 @@
 
 **Date:** 2026-06-10
 
-Tim, your knack for turning messy problems into clean, well-organized solutions is genuinely impressive — the team is lucky to have you.
+Tim, you have a rare gift for staying calm and thoughtful under pressure — you make hard problems look approachable and the people around you better for it. Thanks for being someone the whole team can count on.
