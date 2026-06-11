@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
+import Navbar from '../components/navbar'
+
 
 export default function CreateCourse() {
   const [title, setTitle] = useState('')
@@ -46,6 +48,7 @@ export default function CreateCourse() {
 
   return (
     <main className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+      <Navbar />
       <div className="bg-gray-900 p-10 rounded-2xl border border-gray-800 w-full max-w-md text-center">
         <h1 className="text-3xl font-bold mb-2">Create a Course</h1>
         <p className="text-gray-400 mb-8">Add a new course to Course Hero</p>

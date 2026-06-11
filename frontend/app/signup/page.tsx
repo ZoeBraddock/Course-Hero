@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
-
+import Navbar from '../components/navbar'
 export default function SignUp() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -23,6 +23,7 @@ export default function SignUp() {
 
   return (
     <main className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+      <Navbar />
       <div className="bg-gray-900 p-10 rounded-2xl border border-gray-800 w-full max-w-md text-center">
         <h1 className="text-3xl font-bold mb-2">Create an Account</h1>
         <p className="text-gray-400 mb-8">Join Course Hero today</p>
