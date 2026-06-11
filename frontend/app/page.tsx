@@ -19,16 +19,7 @@ export default async function Home() {
   return (
     
     <main className="min-h-screen bg-gray-950 text-white">
-      <Navbar />
-      <nav className="flex justify-end gap-4 p-6">
-        <Link href="/login" className="text-gray-300 hover:text-white transition">
-          Log In
-        </Link>
-        <Link href="/signup" className="text-gray-300 hover:text-white transition">
-          Sign Up
-        </Link>
-      </nav>
-      
+      <Navbar />      
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-indigo-900 to-purple-900 py-24 px-8 text-center">
         <h1 className="text-5xl font-bold mb-4">Course Hero</h1>
