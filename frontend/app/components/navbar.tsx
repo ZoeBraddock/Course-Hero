@@ -35,40 +35,42 @@ export default function Navbar() {
         <Link href="/" className="text-gray-300 hover:text-white transition">
           Home
         </Link>
-        <Link href="/create-course" className="text-gray-300 hover:text-white transition">
-          Create Course
-        </Link>
 
         {user ? (
-          <div className="relative">
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="w-9 h-9 rounded-full bg-indigo-500 flex items-center justify-center text-white font-semibold"
-            >
-              {user.email?.charAt(0).toUpperCase()}
-            </button>
+          <>
+            <Link href="/create-course" className="text-gray-300 hover:text-white transition">
+              Create Course
+            </Link>
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="w-9 h-9 rounded-full bg-indigo-500 flex items-center justify-center text-white font-semibold"
+              >
+                {user.email?.charAt(0).toUpperCase()}
+              </button>
 
-            {menuOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-gray-900 border border-gray-800 rounded-lg shadow-lg overflow-hidden">
-                <div className="px-4 py-3 text-sm text-gray-400 border-b border-gray-800">
-                  {user.email}
+              {menuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-gray-900 border border-gray-800 rounded-lg shadow-lg overflow-hidden">
+                  <div className="px-4 py-3 text-sm text-gray-400 border-b border-gray-800">
+                    {user.email}
+                  </div>
+                  <Link
+                    href="/account"
+                    className="block px-4 py-2 text-gray-300 hover:bg-gray-800 hover:text-white transition"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    Account
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-4 py-2 text-gray-300 hover:bg-gray-800 hover:text-white transition"
+                  >
+                    Log Out
+                  </button>
                 </div>
-                <Link
-                  href="/account"
-                  className="block px-4 py-2 text-gray-300 hover:bg-gray-800 hover:text-white transition"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  Account
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-left px-4 py-2 text-gray-300 hover:bg-gray-800 hover:text-white transition"
-                >
-                  Log Out
-                </button>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          </>
         ) : (
           <>
             <Link href="/login" className="text-gray-300 hover:text-white transition">
