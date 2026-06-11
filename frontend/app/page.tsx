@@ -41,14 +41,14 @@ export default async function Home() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {courses.map((course) => (
-            <div key={course.id} className="bg-gray-900 rounded-2xl p-6 border border-gray-800 hover:border-indigo-500 transition">
+            <Link href={`/course/${course.id}`} key={course.id} className="bg-gray-900 rounded-2xl p-6 border border-gray-800 hover:border-indigo-500 transition block">
               <h3 className="text-xl font-semibold mb-2">{course.title}</h3>
               <p className="text-gray-400 text-sm mb-4">{course.description}</p>
               <div className="flex justify-between items-center mt-auto">
                 <span className="text-indigo-400 text-sm">{course.name}</span>
                 <span className="text-white font-bold">${course.price}</span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </section>
