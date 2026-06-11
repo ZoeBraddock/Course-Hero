@@ -9,7 +9,7 @@ export default function CreateCourse() {
   const [description, setDescription] = useState('')
   const [price, setPrice] = useState('')
   const [message, setMessage] = useState('')
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState<any>(null)
   const router = useRouter()
 
   useEffect(() => {
