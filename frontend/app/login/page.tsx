@@ -20,7 +20,7 @@ export default function Login() {
     if (error) {
       setMessage(`Error: ${error.message}`)
     } else {
-      router.push('/create-course')
+      router.push('/account')
     }
   }
 
