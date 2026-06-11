@@ -1,5 +1,7 @@
 import Link from 'next/dist/client/link'
 import { supabase } from '../lib/supabase'
+import Navbar from './components/navbar'
+
 export const revalidate = 0
 export default async function Home() {
   const { data: courses, error } = await supabase
@@ -15,7 +17,9 @@ export default async function Home() {
   }
 
   return (
+    
     <main className="min-h-screen bg-gray-950 text-white">
+      <Navbar />
       <nav className="flex justify-end gap-4 p-6">
         <Link href="/login" className="text-gray-300 hover:text-white transition">
           Log In
