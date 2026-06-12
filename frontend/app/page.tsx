@@ -1,6 +1,7 @@
 import Link from 'next/dist/client/link'
 import { supabase } from '../lib/supabase'
 import Navbar from './components/navbar'
+import SignUpButton from './components/sign-up-button'
 
 export const revalidate = 0
 export default async function Home() {
@@ -29,9 +30,7 @@ export default async function Home() {
           Say goodbye to the hassle and hello to more time for teaching and learning. <br></br>
           Sign up now and experience the freedom of a course without admin!
         </p>
-        <Link href="/signup" className="bg-indigo-500 hover:bg-indigo-400 text-white font-semibold px-8 py-3 rounded-full transition">
-          Sign Up Free
-        </Link>
+        <SignUpButton />
       </section>
 
       {/* Courses Section */}
