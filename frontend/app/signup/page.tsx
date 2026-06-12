@@ -18,7 +18,7 @@ export default function SignUp() {
     if (error) {
       setMessage(`Error: ${error.message}`)
     } else {
-      setMessage('Success! Account created.')
+      setMessage('Success! Check your email to confirm your account.')
     }
   }
 
@@ -32,6 +32,8 @@ export default function SignUp() {
         <form onSubmit={(e) => { e.preventDefault(); handleSignUp(); }}>
           <input
             type="email"
+            name="email"
+            autoComplete="email"
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -39,6 +41,8 @@ export default function SignUp() {
           />
           <input
             type="password"
+            name="password"
+            autoComplete="new-password"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}

@@ -34,6 +34,8 @@ export default function Login() {
         <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
           <input
             type="email"
+            name="email"
+            autoComplete="email"
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -41,6 +43,8 @@ export default function Login() {
           />
           <input
             type="password"
+            name="password"
+            autoComplete="current-password"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
