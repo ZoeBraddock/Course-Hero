@@ -36,6 +36,8 @@ export async function POST(req: NextRequest) {
     shop_domain: shop,
     type,
     name,
+    zone_id: body.zone_id ?? null,
+    zone_name: body.zone_name ?? null,
   }
 
   if (type === 'tariff') {

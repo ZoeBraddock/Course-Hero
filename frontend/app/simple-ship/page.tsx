@@ -4,11 +4,21 @@ import { useState, useEffect } from 'react'
 
 type Band = { min: number; max: number | null; reference: number }
 
+type Zone = {
+  id: string
+  name: string
+  profileId: string
+  profileName: string
+  isUS: boolean
+}
+
 type ShippingOption = {
   id: string
   type: 'tariff' | 'flat'
   name: string
   sort_order: number
+  zone_id?: string | null
+  zone_name?: string | null
   // tariff fields
   tariff_rate?: number | null
   base_cost?: number | null
@@ -35,6 +45,8 @@ export default function SimpleShipPage() {
   const [loading, setLoading] = useState(false)
   const [lastSynced, setLastSynced] = useState<string | null>(null)
   const [options, setOptions] = useState<ShippingOption[]>([])
+  const [zones, setZones] = useState<Zone[]>([])
+  const [zonesError, setZonesError] = useState('')
   const [message, setMessage] = useState('')
 
   useEffect(() => {
@@ -56,6 +68,7 @@ export default function SimpleShipPage() {
         setConnected(true)
         setLastSynced(data.last_synced_at)
         await loadOptions(shopDomain)
+        await loadZones(shopDomain)
       }
     } finally {
       setLoading(false)
@@ -69,6 +82,23 @@ export default function SimpleShipPage() {
     setOptions(data.options ?? [])
   }
 
+  async function loadZones(shopDomain: string) {
+    const res = await fetch(`/api/shopify/zones?shop=${shopDomain}`)
+    const data = await res.json()
+    if (data.zones) {
+      setZones(data.zones)
+    } else {
+      setZonesError(data.error ?? 'Could not load shipping zones')
+    }
+  }
+
+  function defaultZone(): { zone_id: string | null; zone_name: string | null } {
+    if (zones.length === 0) return { zone_id: null, zone_name: null }
+    const us = zones.find((z) => z.isUS)
+    const chosen = us ?? zones[0]
+    return { zone_id: chosen.id, zone_name: chosen.name }
+  }
+
   function handleConnect() {
     if (shop) window.location.href = `/api/shopify/auth?shop=${shop}`
   }
@@ -77,6 +107,7 @@ export default function SimpleShipPage() {
     setLoading(true)
     setMessage('')
     try {
+      const zone = defaultZone()
       const body =
         type === 'tariff'
           ? {
@@ -86,6 +117,8 @@ export default function SimpleShipPage() {
               tariff_rate: 0.19,
               base_cost: 15,
               bands: DEFAULT_BANDS,
+              zone_id: zone.zone_id,
+              zone_name: zone.zone_name,
             }
           : {
               shop,
@@ -93,6 +126,8 @@ export default function SimpleShipPage() {
               name: 'DHL Express',
               flat_rate: 20,
               note: 'Customs duties may be charged on delivery',
+              zone_id: zone.zone_id,
+              zone_name: zone.zone_name,
             }
 
       const res = await fetch('/api/shopify/options', {
@@ -284,6 +319,34 @@ export default function SimpleShipPage() {
               >
                 Remove
               </button>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm text-gray-300 mb-1">Shipping zone</label>
+              {zones.length > 0 ? (
+                <select
+                  value={option.zone_id ?? ''}
+                  onChange={(e) => {
+                    const selected = zones.find((z) => z.id === e.target.value)
+                    updateLocal(option.id, {
+                      zone_id: selected?.id ?? null,
+                      zone_name: selected?.name ?? null,
+                    })
+                  }}
+                  className={inputClass}
+                >
+                  <option value="">Select a zone…</option>
+                  {zones.map((z) => (
+                    <option key={z.id} value={z.id}>
+                      {z.name} {z.isUS ? '(includes US)' : ''} — {z.profileName}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="text-sm text-gray-500">
+                  {zonesError || 'No shipping zones found for this store.'}
+                </p>
+              )}
             </div>
 
             {option.type === 'tariff' && (
