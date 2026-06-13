@@ -34,5 +34,5 @@ export async function GET(req: NextRequest) {
     .from('shopify_shops')
     .upsert({ shop_domain: shop, access_token: encryptedToken }, { onConflict: 'shop_domain' })
 
-  return NextResponse.redirect('https://courses-for-horses.vercel.app/tariff-shipping?connected=true')
+  return NextResponse.redirect('https://courses-for-horses.vercel.app/simple-ship?connected=true')
 }
