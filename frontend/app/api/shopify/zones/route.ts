@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
             id
             name
             profileLocationGroups {
+              locationGroup { id }
               locationGroupZones(first: 25) {
                 edges {
                   node {
@@ -60,11 +61,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Shopify API error', details: json.errors }, { status: 500 })
   }
 
-  const zones: { id: string; name: string; profileId: string; profileName: string; isUS: boolean }[] = []
+  const zones: { id: string; name: string; profileId: string; profileName: string; locationGroupId: string; isUS: boolean }[] = []
 
   for (const profileEdge of json.data?.deliveryProfiles?.edges ?? []) {
     const profile = profileEdge.node
     for (const lg of profile.profileLocationGroups ?? []) {
+      const locationGroupId = lg.locationGroup?.id
       for (const zoneEdge of lg.locationGroupZones?.edges ?? []) {
         const zone = zoneEdge.node.zone
         const countryCodes = (zone.countries ?? []).map((c: { code: { countryCode: string } }) => c.code.countryCode)
@@ -73,6 +75,7 @@ export async function GET(req: NextRequest) {
           name: zone.name,
           profileId: profile.id,
           profileName: profile.name,
+          locationGroupId,
           isUS: countryCodes.includes('US'),
         })
       }

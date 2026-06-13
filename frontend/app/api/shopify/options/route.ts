@@ -38,6 +38,8 @@ export async function POST(req: NextRequest) {
     name,
     zone_id: body.zone_id ?? null,
     zone_name: body.zone_name ?? null,
+    profile_id: body.profile_id ?? null,
+    location_group_id: body.location_group_id ?? null,
   }
 
   if (type === 'tariff') {

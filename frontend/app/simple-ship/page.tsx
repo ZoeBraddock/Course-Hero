@@ -9,6 +9,7 @@ type Zone = {
   name: string
   profileId: string
   profileName: string
+  locationGroupId: string
   isUS: boolean
 }
 
@@ -19,6 +20,8 @@ type ShippingOption = {
   sort_order: number
   zone_id?: string | null
   zone_name?: string | null
+  profile_id?: string | null
+  location_group_id?: string | null
   // tariff fields
   tariff_rate?: number | null
   base_cost?: number | null
@@ -92,11 +95,21 @@ export default function SimpleShipPage() {
     }
   }
 
-  function defaultZone(): { zone_id: string | null; zone_name: string | null } {
-    if (zones.length === 0) return { zone_id: null, zone_name: null }
+  function defaultZone(): {
+    zone_id: string | null
+    zone_name: string | null
+    profile_id: string | null
+    location_group_id: string | null
+  } {
+    if (zones.length === 0) return { zone_id: null, zone_name: null, profile_id: null, location_group_id: null }
     const us = zones.find((z) => z.isUS)
     const chosen = us ?? zones[0]
-    return { zone_id: chosen.id, zone_name: chosen.name }
+    return {
+      zone_id: chosen.id,
+      zone_name: chosen.name,
+      profile_id: chosen.profileId,
+      location_group_id: chosen.locationGroupId,
+    }
   }
 
   function handleConnect() {
@@ -117,8 +130,7 @@ export default function SimpleShipPage() {
               tariff_rate: 0.19,
               base_cost: 15,
               bands: DEFAULT_BANDS,
-              zone_id: zone.zone_id,
-              zone_name: zone.zone_name,
+              ...zone,
             }
           : {
               shop,
@@ -126,8 +138,7 @@ export default function SimpleShipPage() {
               name: 'DHL Express',
               flat_rate: 20,
               note: 'Customs duties may be charged on delivery',
-              zone_id: zone.zone_id,
-              zone_name: zone.zone_name,
+              ...zone,
             }
 
       const res = await fetch('/api/shopify/options', {
@@ -241,7 +252,7 @@ export default function SimpleShipPage() {
         <div className="w-full max-w-md bg-gray-900 rounded-2xl p-8 border border-gray-800">
           <h1 className="text-2xl font-bold mb-1">Simple Ship</h1>
           <p className="text-gray-400 text-sm mb-6">
-            Connect your Shopify store to set up your US shipping options.
+            Connect your Shopify store to set up your shipping options.
           </p>
 
           <label className="block text-sm text-gray-300 mb-1">Store domain</label>
@@ -286,7 +297,7 @@ export default function SimpleShipPage() {
         </div>
 
         <p className="text-sm text-gray-400">
-          These options apply to your US shipping zone. Add as many as you need —
+          These options apply to your shipping zone. Add as many as you need —
           a <span className="text-gray-200 font-medium">tariff-inclusive</span> option calculates a duty-included
           flat rate based on order value bands; a <span className="text-gray-200 font-medium">flat rate</span> option
           is a simple price with an optional note shown at checkout.
@@ -331,6 +342,8 @@ export default function SimpleShipPage() {
                     updateLocal(option.id, {
                       zone_id: selected?.id ?? null,
                       zone_name: selected?.name ?? null,
+                      profile_id: selected?.profileId ?? null,
+                      location_group_id: selected?.locationGroupId ?? null,
                     })
                   }}
                   className={inputClass}
