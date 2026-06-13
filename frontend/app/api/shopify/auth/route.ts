@@ -2,8 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 
 export async function GET(req: NextRequest) {
-  const shop = req.nextUrl.searchParams.get('shop')
+  let shop = req.nextUrl.searchParams.get('shop')
   if (!shop) return NextResponse.json({ error: 'Missing shop param' }, { status: 400 })
+
+  // Clean up common input mistakes: stray protocol, whitespace, trailing slashes
+  shop = shop.trim().replace(/^https?:\/\//, '').replace(/\/+$/, '')
+
+  if (!shop.endsWith('.myshopify.com')) {
+    return NextResponse.json(
+      { error: 'Shop must be a .myshopify.com domain, e.g. yourstore.myshopify.com' },
+      { status: 400 }
+    )
+  }
 
   const state = crypto.randomBytes(16).toString('hex')
   const redirectUri = 'https://courses-for-horses.vercel.app/api/shopify/callback'
