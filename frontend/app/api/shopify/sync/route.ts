@@ -147,7 +147,6 @@ export async function POST(req: NextRequest) {
       const arr = locationGroupsMap.get(z.locationGroupId) ?? []
       arr.push({
         id: z.zoneId,
-        methodDefinitionsToDelete: z.methodDefinitionsToDelete,
         methodDefinitionsToCreate: z.methodDefinitionsToCreate,
       })
       locationGroupsMap.set(z.locationGroupId, arr)
@@ -159,6 +158,13 @@ export async function POST(req: NextRequest) {
         zonesToUpdate: zones,
       })
     )
+
+    // methodDefinitionsToDelete belongs at the top level of DeliveryProfileInput,
+    // not nested inside each zone
+    const allMethodDefinitionsToDelete: string[] = []
+    for (const z of zonesToUpdate) {
+      allMethodDefinitionsToDelete.push(...z.methodDefinitionsToDelete)
+    }
 
     const mutation = `
       mutation deliveryProfileUpdate($id: ID!, $profile: DeliveryProfileInput!) {
@@ -178,6 +184,7 @@ export async function POST(req: NextRequest) {
       id: profileId,
       profile: {
         locationGroupsToUpdate,
+        methodDefinitionsToDelete: allMethodDefinitionsToDelete,
       },
     }
 
