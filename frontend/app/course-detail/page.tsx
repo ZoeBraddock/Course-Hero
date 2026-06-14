@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { supabase } from '../../../lib/supabase'
-import Navbar from '../../components/navbar'
+import { supabase } from '../../lib/supabase'
+import Navbar from '../components/navbar'
 
 interface CourseInstance {
   course_instance_id: string
