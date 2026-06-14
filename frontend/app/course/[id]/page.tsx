@@ -30,25 +30,26 @@ export default function CourseDetail() {
 
   useEffect(() => {
     const fetchCourse = async () => {
-      const { data, error } = await supabase
+      const { data: courseData, error: courseError } = await supabase
         .from('course')
-        .select(`
-          id, title, description, price,
-          course_instance (course_instance_id, start_date, end_date)
-        `)
+        .select('id, title, description, price')
         .eq('id', id)
         .single()
 
-      if (error || !data) {
+      if (courseError || !courseData) {
         setError('Course not found')
         return
       }
 
-      setCourse(data as Course)
+      const { data: instances } = await supabase
+        .from('course_instance')
+        .select('course_instance_id, start_date, end_date')
+        .eq('course_id', id)
 
-      // Auto-select first instance if only one
-      if (data.course_instance?.length === 1) {
-        setSelectedInstance(data.course_instance[0].course_instance_id)
+      setCourse({ ...courseData, course_instance: instances ?? [] })
+
+      if (instances?.length === 1) {
+        setSelectedInstance(instances[0].course_instance_id)
       }
     }
 
