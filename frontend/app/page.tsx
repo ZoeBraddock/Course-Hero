@@ -4,6 +4,7 @@ import Navbar from './components/navbar'
 import SignUpButton from './components/sign-up-button'
 
 export const revalidate = 0
+
 export default async function Home() {
   const { data: courses, error } = await supabase
     .from('course')
