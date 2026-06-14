@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import Navbar from '../components/navbar'
 
-
 export default function CreateCourse() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -28,10 +27,10 @@ export default function CreateCourse() {
 
   const handleCreateCourse = async () => {
     const { error } = await supabase.from('course').insert({
-      title: title,
-      description: description,
+      title,
+      description,
       price: parseFloat(price),
-      primary_instructor: user.id,
+      owner_id: user.id, // fixed: was primary_instructor
     })
 
     if (error) {
@@ -53,7 +52,7 @@ export default function CreateCourse() {
         <h1 className="text-3xl font-bold mb-2">Create a Course</h1>
         <p className="text-gray-400 mb-8">Add a new course to Course Hero</p>
 
-        <form onSubmit={(e) => { e.preventDefault(); handleCreateCourse(); }}>
+        <form onSubmit={(e) => { e.preventDefault(); handleCreateCourse() }}>
           <input
             type="text"
             placeholder="Course Title"
