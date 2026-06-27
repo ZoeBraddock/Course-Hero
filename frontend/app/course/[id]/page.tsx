@@ -56,7 +56,6 @@ export default function CourseDetail() {
     fetchCourse()
   }, [id])
 
-  // Pre-fill email if logged in
   useEffect(() => {
     const getUser = async () => {
       const { data } = await supabase.auth.getUser()
@@ -90,7 +89,6 @@ export default function CourseDetail() {
         return
       }
 
-      // Redirect to Stripe Checkout
       window.location.href = data.url
     } catch (err) {
       setError('Something went wrong. Please try again.')
@@ -125,7 +123,6 @@ export default function CourseDetail() {
         <p className="text-gray-400 mb-6">{course.description}</p>
         <p className="text-2xl font-bold text-indigo-400 mb-8">${course.price}</p>
 
-        {/* Instance selector — only show if multiple instances */}
         {course.course_instance?.length > 1 && (
           <div className="mb-4">
             <label className="block text-sm text-gray-400 mb-2">Select a date</label>
@@ -145,12 +142,10 @@ export default function CourseDetail() {
           </div>
         )}
 
-        {/* No instances yet */}
         {course.course_instance?.length === 0 && (
           <p className="text-gray-500 text-sm mb-6">No upcoming dates scheduled yet.</p>
         )}
 
-        {/* Enrolment form — only show if there's an instance to enrol in */}
         {course.course_instance?.length > 0 && (
           <>
             <input
