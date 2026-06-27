@@ -6,7 +6,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 export async function POST(req: NextRequest) {
   try {
-    const { courseInstanceId, email, fbProfileUrl } = await req.json()
+    const { courseInstanceId, email} = await req.json()
 
     if (!courseInstanceId || !email) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })

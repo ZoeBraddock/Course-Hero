@@ -24,7 +24,6 @@ export default function CourseDetail() {
   const [course, setCourse] = useState<Course | null>(null)
   const [selectedInstance, setSelectedInstance] = useState<string>('')
   const [email, setEmail] = useState('')
-  const [fbProfileUrl, setFbProfileUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -46,10 +45,11 @@ export default function CourseDetail() {
         .select('course_instance_id, start_date, end_date')
         .eq('course_id', id)
 
-      setCourse({ ...courseData, course_instance: instances ?? [] })
+      const instanceList = instances ?? []
+      setCourse({ ...courseData, course_instance: instanceList })
 
-      if (instances?.length === 1) {
-        setSelectedInstance(instances[0].course_instance_id)
+      if (instanceList.length === 1) {
+        setSelectedInstance(instanceList[0].course_instance_id)
       }
     }
 
@@ -78,7 +78,6 @@ export default function CourseDetail() {
         body: JSON.stringify({
           courseInstanceId: selectedInstance,
           email,
-          fbProfileUrl,
         }),
       })
 
@@ -153,13 +152,6 @@ export default function CourseDetail() {
               placeholder="Your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-gray-800 text-white px-4 py-3 rounded-lg mb-4 outline-none border border-gray-700 focus:border-indigo-500"
-            />
-            <input
-              type="url"
-              placeholder="Facebook profile URL (e.g. facebook.com/yourname)"
-              value={fbProfileUrl}
-              onChange={(e) => setFbProfileUrl(e.target.value)}
               className="w-full bg-gray-800 text-white px-4 py-3 rounded-lg mb-6 outline-none border border-gray-700 focus:border-indigo-500"
             />
 
