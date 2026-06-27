@@ -5,56 +5,40 @@ import { supabaseAdmin } from '../../../lib/supabase-server'
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 export async function POST(req: NextRequest) {
-  try {
-    const { courseInstanceId, email} = await req.json()
+  const { courseInstanceId, email } = await req.json()
 
-    if (!courseInstanceId || !email) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
-    }
-
-    // Fetch the course instance + course details for price and title
-    const { data: instance, error: instanceError } = await supabaseAdmin
-      .from('course_instance')
-      .select('course_instance_id, course_id, course(title, price)')
-      .eq('course_instance_id', courseInstanceId)
-      .single()
-
-    if (instanceError || !instance) {
-      return NextResponse.json({ error: 'Course instance not found' }, { status: 404 })
-    }
-
-    const course = (instance.course as any) as { title: string; price: number }
-
-    // Create Stripe Checkout session
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      mode: 'payment',
-      customer_email: email,
-      line_items: [
-        {
-          price_data: {
-            currency: 'nzd',
-            product_data: {
-              name: course.title,
-            },
-            unit_amount: Math.round(course.price * 100), // Stripe uses cents
-          },
-          quantity: 1,
-        },
-      ],
-      allow_promotion_codes: true, // enables Stripe discount codes
-      metadata: {
-        course_instance_id: courseInstanceId,
-        email,
-        fb_profile_url: fbProfileUrl || '',
-      },
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/enrolment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/course/${instance.course_id}`,
-    })
-
-    return NextResponse.json({ url: session.url })
-  } catch (err) {
-    console.error('Checkout error:', err)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  if (!courseInstanceId || !email) {
+    return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
+
+  const { data: instance, error } = await supabaseAdmin
+    .from('course_instance')
+    .select('course_instance_id, course_id, course(title, price)')
+    .eq('course_instance_id', courseInstanceId)
+    .single()
+
+  if (error || !instance) {
+    return NextResponse.json({ error: 'Course instance not found' }, { status: 404 })
+  }
+
+  const course = (instance.course as any) as { title: string; price: number }
+
+  const session = await stripe.checkout.sessions.create({
+    mode: 'payment',
+    customer_email: email,
+    line_items: [{
+      price_data: {
+        currency: 'nzd',
+        product_data: { name: course.title },
+        unit_amount: Math.round(course.price * 100),
+      },
+      quantity: 1,
+    }],
+    allow_promotion_codes: true,
+    metadata: { course_instance_id: courseInstanceId, email },
+    success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/enrolment-success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/course/${instance.course_id}`,
+  })
+
+  return NextResponse.json({ url: session.url })
 }
