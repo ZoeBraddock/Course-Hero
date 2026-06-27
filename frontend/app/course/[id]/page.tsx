@@ -159,7 +159,7 @@ export default function CourseDetail() {
 
             <button
               onClick={handleEnrol}
-              disabled={loading}
+              disabled={loading || !selectedInstance}
               className="w-full bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white font-semibold py-3 rounded-full transition"
             >
               {loading ? 'Redirecting to payment...' : 'Enrol Now'}
