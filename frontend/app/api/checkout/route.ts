@@ -7,6 +7,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 export async function POST(req: NextRequest) {
   const { courseInstanceId, email } = await req.json()
 
+  console.log('courseInstanceId:', courseInstanceId)
+  console.log('email:', email)
+
   if (!courseInstanceId || !email) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
@@ -16,6 +19,9 @@ export async function POST(req: NextRequest) {
     .select('course_instance_id, course_id, course(title, price)')
     .eq('course_instance_id', courseInstanceId)
     .single()
+
+  console.log('instance:', JSON.stringify(instance))
+  console.log('instanceError:', JSON.stringify(error))
 
   if (error || !instance) {
     return NextResponse.json({ error: 'Course instance not found' }, { status: 404 })
