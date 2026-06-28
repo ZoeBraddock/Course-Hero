@@ -255,7 +255,7 @@ export default function MyHorses() {
                     </div>
                   )}
                   {/* Upload overlay */}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 hover:bg-opacity-50 transition group">
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/50 transition group">
                     <label className="cursor-pointer flex items-center justify-center w-full h-full">
                       <span className="text-white text-sm font-medium opacity-0 group-hover:opacity-100 transition">
                         {uploadingId === horse.id ? 'Uploading...' : '📷 Change photo'}
