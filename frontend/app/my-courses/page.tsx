@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '../../lib/supabase'
@@ -18,6 +18,7 @@ interface Course {
   title: string
   description: string
   price: number
+  created_at: string
   course_instance: Instance[]
 }
 
@@ -30,9 +31,20 @@ interface EnrolledInstance {
   course: { id: string; title: string }
 }
 
+type OwnedFilter = 'all' | 'upcoming'
+type OwnedSort = 'recent' | 'name' | 'upcoming'
+type EnrolledFilter = 'all' | 'upcoming' | 'past'
+type EnrolledSort = 'recent' | 'name' | 'upcoming'
+
+const today = new Date().toISOString().split('T')[0]
 const formatDate = (d: string) => new Date(d).toLocaleDateString('en-NZ')
+const hasUpcoming = (instances: Instance[]) => instances.some(i => i.start_date >= today)
 const emptyCourseForm = { title: '', description: '', price: '' }
 const emptyInstanceForm = { start_date: '', end_date: '', fb_group_invite_url: '' }
+
+const btnBase = 'px-3 py-1 rounded-full text-xs font-medium transition'
+const activeBtn = `${btnBase} bg-indigo-500 text-white`
+const inactiveBtn = `${btnBase} bg-gray-800 text-gray-400 hover:text-white`
 
 export default function MyCourses() {
   const [ownedCourses, setOwnedCourses] = useState<Course[]>([])
@@ -51,6 +63,12 @@ export default function MyCourses() {
   const [savingInstance, setSavingInstance] = useState(false)
 
   const [error, setError] = useState('')
+
+  const [ownedFilter, setOwnedFilter] = useState<OwnedFilter>('all')
+  const [ownedSort, setOwnedSort] = useState<OwnedSort>('recent')
+  const [enrolledFilter, setEnrolledFilter] = useState<EnrolledFilter>('all')
+  const [enrolledSort, setEnrolledSort] = useState<EnrolledSort>('recent')
+
   const router = useRouter()
 
   useEffect(() => { loadData() }, [])
@@ -62,9 +80,8 @@ export default function MyCourses() {
     const [ownedRes, enrolmentsRes] = await Promise.all([
       supabase
         .from('course')
-        .select('id, title, description, price, course_instance(course_instance_id, start_date, end_date, fb_group_invite_url)')
-        .eq('owner_id', user.id)
-        .order('created_at', { ascending: false }),
+        .select('id, title, description, price, created_at, course_instance(course_instance_id, start_date, end_date, fb_group_invite_url)')
+        .eq('owner_id', user.id),
       supabase
         .from('enrolment')
         .select('id, role, status, course_instance_id, course_instance(course_instance_id, start_date, end_date, course(id, title)), orders(status)')
@@ -96,6 +113,44 @@ export default function MyCourses() {
     setLoading(false)
   }
 
+  // ── Filtered + sorted owned courses ──────────────────────
+  const filteredOwned = useMemo(() => {
+    let result = ownedFilter === 'upcoming'
+      ? ownedCourses.filter(c => hasUpcoming(c.course_instance))
+      : [...ownedCourses]
+
+    if (ownedSort === 'recent') result.sort((a, b) => b.created_at.localeCompare(a.created_at))
+    else if (ownedSort === 'name') result.sort((a, b) => a.title.localeCompare(b.title))
+    else if (ownedSort === 'upcoming') {
+      result.sort((a, b) => {
+        const aNext = a.course_instance.filter(i => i.start_date >= today).sort()[0]?.start_date ?? '9999'
+        const bNext = b.course_instance.filter(i => i.start_date >= today).sort()[0]?.start_date ?? '9999'
+        return aNext.localeCompare(bNext)
+      })
+    }
+    return result
+  }, [ownedCourses, ownedFilter, ownedSort])
+
+  // ── Filtered + sorted enrolled instances ─────────────────
+  const filteredEnrolled = useMemo(() => {
+    let result = enrolledFilter === 'upcoming'
+      ? enrolledInstances.filter(i => i.start_date >= today)
+      : enrolledFilter === 'past'
+      ? enrolledInstances.filter(i => i.end_date < today)
+      : [...enrolledInstances]
+
+    if (enrolledSort === 'recent') result.sort((a, b) => b.start_date.localeCompare(a.start_date))
+    else if (enrolledSort === 'name') result.sort((a, b) => a.course.title.localeCompare(b.course.title))
+    else if (enrolledSort === 'upcoming') {
+      result.sort((a, b) => {
+        const aDate = a.start_date >= today ? a.start_date : '9999'
+        const bDate = b.start_date >= today ? b.start_date : '9999'
+        return aDate.localeCompare(bDate)
+      })
+    }
+    return result
+  }, [enrolledInstances, enrolledFilter, enrolledSort])
+
   // ── Course CRUD ──────────────────────────────────────────
 
   const handleSaveCourse = async () => {
@@ -124,7 +179,7 @@ export default function MyCourses() {
       const { data, error: err } = await supabase
         .from('course')
         .insert({ title: courseForm.title, description: courseForm.description, price: parseFloat(courseForm.price), owner_id: user.id })
-        .select('id, title, description, price')
+        .select('id, title, description, price, created_at')
         .single()
 
       if (err) { setError(err.message); setSavingCourse(false); return }
@@ -239,96 +294,67 @@ export default function MyCourses() {
 
         {/* ── Courses I Own ── */}
         <section>
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
             <h2 className="text-xl font-semibold text-indigo-400">Courses I Own</h2>
-            {!showCourseForm && !editingCourseId && (
-              <button
-                onClick={() => { setShowCourseForm(true); setCourseForm(emptyCourseForm) }}
-                className="bg-indigo-500 hover:bg-indigo-400 text-white text-sm font-semibold px-4 py-2 rounded-full transition"
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex gap-1">
+                <button className={ownedFilter === 'all' ? activeBtn : inactiveBtn} onClick={() => setOwnedFilter('all')}>All</button>
+                <button className={ownedFilter === 'upcoming' ? activeBtn : inactiveBtn} onClick={() => setOwnedFilter('upcoming')}>Upcoming</button>
+              </div>
+              <select
+                value={ownedSort}
+                onChange={e => setOwnedSort(e.target.value as OwnedSort)}
+                className="bg-gray-800 text-gray-300 text-xs px-3 py-1 rounded-full outline-none border border-gray-700 focus:border-indigo-500"
               >
-                + Add Course
-              </button>
-            )}
+                <option value="recent">Recently Added</option>
+                <option value="name">Name</option>
+                <option value="upcoming">Next Upcoming</option>
+              </select>
+              {!showCourseForm && !editingCourseId && (
+                <button
+                  onClick={() => { setShowCourseForm(true); setCourseForm(emptyCourseForm) }}
+                  className="bg-indigo-500 hover:bg-indigo-400 text-white text-xs font-semibold px-4 py-1 rounded-full transition"
+                >
+                  + Add Course
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* New course form — top level, add only */}
           {showCourseForm && !editingCourseId && (
             <div className="bg-gray-900 border border-indigo-500 rounded-xl p-6 mb-4 space-y-3">
               <h3 className="font-semibold">New Course</h3>
-              <input
-                type="text"
-                placeholder="Title *"
-                value={courseForm.title}
-                onChange={e => setCourseForm({ ...courseForm, title: e.target.value })}
-                className="w-full bg-gray-800 text-white px-4 py-3 rounded-lg outline-none border border-gray-700 focus:border-indigo-500"
-              />
-              <textarea
-                placeholder="Description"
-                value={courseForm.description}
-                rows={2}
-                onChange={e => setCourseForm({ ...courseForm, description: e.target.value })}
-                className="w-full bg-gray-800 text-white px-4 py-3 rounded-lg outline-none border border-gray-700 focus:border-indigo-500"
-              />
-              <input
-                type="number"
-                placeholder="Price *"
-                value={courseForm.price}
-                onChange={e => setCourseForm({ ...courseForm, price: e.target.value })}
-                className="w-full bg-gray-800 text-white px-4 py-3 rounded-lg outline-none border border-gray-700 focus:border-indigo-500"
-              />
+              <input type="text" placeholder="Title *" value={courseForm.title} onChange={e => setCourseForm({ ...courseForm, title: e.target.value })} className="w-full bg-gray-800 text-white px-4 py-3 rounded-lg outline-none border border-gray-700 focus:border-indigo-500" />
+              <textarea placeholder="Description" value={courseForm.description} rows={2} onChange={e => setCourseForm({ ...courseForm, description: e.target.value })} className="w-full bg-gray-800 text-white px-4 py-3 rounded-lg outline-none border border-gray-700 focus:border-indigo-500" />
+              <input type="number" placeholder="Price *" value={courseForm.price} onChange={e => setCourseForm({ ...courseForm, price: e.target.value })} className="w-full bg-gray-800 text-white px-4 py-3 rounded-lg outline-none border border-gray-700 focus:border-indigo-500" />
               {error && <p className="text-red-400 text-sm">{error}</p>}
               <div className="flex gap-3">
-                <button onClick={handleSaveCourse} disabled={savingCourse} className="bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2 rounded-full transition">
-                  {savingCourse ? 'Saving...' : 'Create Course'}
-                </button>
+                <button onClick={handleSaveCourse} disabled={savingCourse} className="bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2 rounded-full transition">{savingCourse ? 'Saving...' : 'Create Course'}</button>
                 <button onClick={handleCancelCourse} className="text-gray-400 hover:text-white text-sm px-4 py-2 transition">Cancel</button>
               </div>
             </div>
           )}
 
-          {ownedCourses.length === 0 && !showCourseForm ? (
-            <p className="text-gray-500">You haven't created any courses yet.</p>
+          {filteredOwned.length === 0 ? (
+            <p className="text-gray-500">{ownedFilter === 'upcoming' ? 'No courses with upcoming instances.' : "You haven't created any courses yet."}</p>
           ) : (
             <div className="space-y-4">
-              {ownedCourses.map(course => (
+              {filteredOwned.map(course => (
                 <div key={course.id} className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-
-                  {/* Inline edit form */}
                   {editingCourseId === course.id ? (
                     <div className="space-y-3">
                       <h3 className="font-semibold">Edit Course</h3>
-                      <input
-                        type="text"
-                        placeholder="Title *"
-                        value={courseForm.title}
-                        onChange={e => setCourseForm({ ...courseForm, title: e.target.value })}
-                        className="w-full bg-gray-800 text-white px-4 py-3 rounded-lg outline-none border border-gray-700 focus:border-indigo-500"
-                      />
-                      <textarea
-                        placeholder="Description"
-                        value={courseForm.description}
-                        rows={2}
-                        onChange={e => setCourseForm({ ...courseForm, description: e.target.value })}
-                        className="w-full bg-gray-800 text-white px-4 py-3 rounded-lg outline-none border border-gray-700 focus:border-indigo-500"
-                      />
-                      <input
-                        type="number"
-                        placeholder="Price *"
-                        value={courseForm.price}
-                        onChange={e => setCourseForm({ ...courseForm, price: e.target.value })}
-                        className="w-full bg-gray-800 text-white px-4 py-3 rounded-lg outline-none border border-gray-700 focus:border-indigo-500"
-                      />
+                      <input type="text" placeholder="Title *" value={courseForm.title} onChange={e => setCourseForm({ ...courseForm, title: e.target.value })} className="w-full bg-gray-800 text-white px-4 py-3 rounded-lg outline-none border border-gray-700 focus:border-indigo-500" />
+                      <textarea placeholder="Description" value={courseForm.description} rows={2} onChange={e => setCourseForm({ ...courseForm, description: e.target.value })} className="w-full bg-gray-800 text-white px-4 py-3 rounded-lg outline-none border border-gray-700 focus:border-indigo-500" />
+                      <input type="number" placeholder="Price *" value={courseForm.price} onChange={e => setCourseForm({ ...courseForm, price: e.target.value })} className="w-full bg-gray-800 text-white px-4 py-3 rounded-lg outline-none border border-gray-700 focus:border-indigo-500" />
                       {error && <p className="text-red-400 text-sm">{error}</p>}
                       <div className="flex gap-3">
-                        <button onClick={handleSaveCourse} disabled={savingCourse} className="bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2 rounded-full transition">
-                          {savingCourse ? 'Saving...' : 'Save Changes'}
-                        </button>
+                        <button onClick={handleSaveCourse} disabled={savingCourse} className="bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2 rounded-full transition">{savingCourse ? 'Saving...' : 'Save Changes'}</button>
                         <button onClick={handleCancelCourse} className="text-gray-400 hover:text-white text-sm px-4 py-2 transition">Cancel</button>
                       </div>
                     </div>
                   ) : (
                     <>
-                      {/* Course header */}
                       <div className="flex justify-between items-start mb-3">
                         <div>
                           <h3 className="text-lg font-semibold">{course.title}</h3>
@@ -341,7 +367,6 @@ export default function MyCourses() {
                         </div>
                       </div>
 
-                      {/* Instances */}
                       <div className="space-y-2">
                         {course.course_instance.map(inst => (
                           <div key={inst.course_instance_id}>
@@ -361,9 +386,7 @@ export default function MyCourses() {
                                 <input type="text" placeholder="Facebook group invite URL" value={instanceForm.fb_group_invite_url} onChange={e => setInstanceForm({ ...instanceForm, fb_group_invite_url: e.target.value })} className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg outline-none border border-gray-600 focus:border-indigo-500 text-sm" />
                                 {error && <p className="text-red-400 text-xs">{error}</p>}
                                 <div className="flex gap-3">
-                                  <button onClick={() => handleSaveInstance(course.id)} disabled={savingInstance} className="bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white text-xs font-semibold px-4 py-2 rounded-full transition">
-                                    {savingInstance ? 'Saving...' : 'Save Changes'}
-                                  </button>
+                                  <button onClick={() => handleSaveInstance(course.id)} disabled={savingInstance} className="bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white text-xs font-semibold px-4 py-2 rounded-full transition">{savingInstance ? 'Saving...' : 'Save Changes'}</button>
                                   <button onClick={handleCancelInstance} className="text-gray-400 hover:text-white text-xs px-3 py-2 transition">Cancel</button>
                                 </div>
                               </div>
@@ -380,7 +403,6 @@ export default function MyCourses() {
                           </div>
                         ))}
 
-                        {/* Add instance form */}
                         {showInstanceForm === course.id && !editingInstance && (
                           <div className="bg-gray-800 border border-indigo-500 rounded-lg p-4 space-y-3 mt-2">
                             <h4 className="text-sm font-semibold">New Instance</h4>
@@ -397,9 +419,7 @@ export default function MyCourses() {
                             <input type="text" placeholder="Facebook group invite URL" value={instanceForm.fb_group_invite_url} onChange={e => setInstanceForm({ ...instanceForm, fb_group_invite_url: e.target.value })} className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg outline-none border border-gray-600 focus:border-indigo-500 text-sm" />
                             {error && <p className="text-red-400 text-xs">{error}</p>}
                             <div className="flex gap-3">
-                              <button onClick={() => handleSaveInstance(course.id)} disabled={savingInstance} className="bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white text-xs font-semibold px-4 py-2 rounded-full transition">
-                                {savingInstance ? 'Saving...' : 'Add Instance'}
-                              </button>
+                              <button onClick={() => handleSaveInstance(course.id)} disabled={savingInstance} className="bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white text-xs font-semibold px-4 py-2 rounded-full transition">{savingInstance ? 'Saving...' : 'Add Instance'}</button>
                               <button onClick={handleCancelInstance} className="text-gray-400 hover:text-white text-xs px-3 py-2 transition">Cancel</button>
                             </div>
                           </div>
@@ -439,12 +459,33 @@ export default function MyCourses() {
 
         {/* ── Courses I'm Enrolled In ── */}
         <section>
-          <h2 className="text-xl font-semibold mb-4 text-indigo-400">Courses I'm Enrolled In</h2>
-          {enrolledInstances.length === 0 ? (
-            <p className="text-gray-500">You haven't enrolled in any courses yet.</p>
+          <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
+            <h2 className="text-xl font-semibold text-indigo-400">Courses I'm Enrolled In</h2>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex gap-1">
+                <button className={enrolledFilter === 'all' ? activeBtn : inactiveBtn} onClick={() => setEnrolledFilter('all')}>All</button>
+                <button className={enrolledFilter === 'upcoming' ? activeBtn : inactiveBtn} onClick={() => setEnrolledFilter('upcoming')}>Upcoming</button>
+                <button className={enrolledFilter === 'past' ? activeBtn : inactiveBtn} onClick={() => setEnrolledFilter('past')}>Past</button>
+              </div>
+              <select
+                value={enrolledSort}
+                onChange={e => setEnrolledSort(e.target.value as EnrolledSort)}
+                className="bg-gray-800 text-gray-300 text-xs px-3 py-1 rounded-full outline-none border border-gray-700 focus:border-indigo-500"
+              >
+                <option value="recent">Recently Added</option>
+                <option value="name">Name</option>
+                <option value="upcoming">Next Upcoming</option>
+              </select>
+            </div>
+          </div>
+
+          {filteredEnrolled.length === 0 ? (
+            <p className="text-gray-500">
+              {enrolledFilter === 'upcoming' ? 'No upcoming enrolments.' : enrolledFilter === 'past' ? 'No past enrolments.' : "You haven't enrolled in any courses yet."}
+            </p>
           ) : (
             <div className="space-y-2">
-              {enrolledInstances.map(inst => (
+              {filteredEnrolled.map(inst => (
                 <Link key={inst.course_instance_id} href={`/course/${inst.course.id}/instance/${inst.course_instance_id}`} className="flex justify-between items-center bg-gray-900 border border-gray-800 hover:bg-gray-800 rounded-xl px-6 py-4 transition">
                   <div>
                     <p className="font-medium">{inst.course.title}</p>
