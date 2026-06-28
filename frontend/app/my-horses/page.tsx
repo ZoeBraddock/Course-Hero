@@ -83,21 +83,14 @@ export default function MyHorses() {
   const handlePhotoUpload = async (horseId: string, file: File) => {
     if (!userId) return
     setUploadingId(horseId)
+    setError('')
 
     const ext = file.name.split('.').pop()
     const path = `${userId}/${horseId}.${ext}`
 
-    console.log('Uploading to path:', path)
-    console.log('File type:', file.type)
-
-    await supabase.storage.from('horse-photos').remove([`${userId}/${horseId}`])
-
-    const { error: uploadError, data: uploadData } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from('horse-photos')
       .upload(path, file, { upsert: true })
-
-    console.log('Upload result:', uploadData)
-    console.log('Upload error:', uploadError)
 
     if (uploadError) {
       setError(uploadError.message)
@@ -109,10 +102,22 @@ export default function MyHorses() {
       .from('horse-photos')
       .getPublicUrl(path)
 
-    console.log('Public URL:', publicUrl)
+    const { error: updateError } = await supabase
+      .from('horse')
+      .update({ photo_url: publicUrl })
+      .eq('id', horseId)
 
-    await supabase.from('horse').update({ photo_url: publicUrl }).eq('id', horseId)
-    setHorses(prev => prev.map(h => h.id === horseId ? { ...h, photo_url: publicUrl } : h))
+    if (updateError) {
+      setError(updateError.message)
+      setUploadingId(null)
+      return
+    }
+
+    // Force re-render with cache buster
+    const urlWithBuster = `${publicUrl}?t=${Date.now()}`
+    setHorses(prev => prev.map(h =>
+      h.id === horseId ? { ...h, photo_url: urlWithBuster } : h
+    ))
     setUploadingId(null)
   }
 
@@ -124,7 +129,13 @@ export default function MyHorses() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this horse profile?')) return
-    if (userId) await supabase.storage.from('horse-photos').remove([`${userId}/${id}`])
+    if (userId) {
+      const horse = horses.find(h => h.id === id)
+      if (horse?.photo_url) {
+        const ext = horse.photo_url.split('.').pop()?.split('?')[0]
+        await supabase.storage.from('horse-photos').remove([`${userId}/${id}.${ext}`])
+      }
+    }
     await supabase.from('horse').delete().eq('id', id)
     setHorses(prev => prev.filter(h => h.id !== id))
   }
@@ -229,27 +240,38 @@ export default function MyHorses() {
           <div className="grid gap-6 sm:grid-cols-2">
             {horses.map(horse => (
               <div key={horse.id} className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-                <div className="relative h-48 bg-gray-800 group">
-                  {horse.photo_url ? (
-                    <img src={horse.photo_url} alt={horse.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-600 text-sm">No photo yet</div>
-                  )}
-                  <label className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 group-hover:bg-opacity-50 transition cursor-pointer">
-                    <span className="text-white text-sm font-medium opacity-0 group-hover:opacity-100 transition">
-                      {uploadingId === horse.id ? 'Uploading...' : '📷 Change photo'}
-                    </span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      disabled={uploadingId === horse.id}
-                      onChange={e => {
-                        const file = e.target.files?.[0]
-                        if (file) handlePhotoUpload(horse.id, file)
-                      }}
+                {/* Photo area */}
+                <div className="relative h-48 bg-gray-800">
+                  {horse.photo_url && (
+                    <img
+                      src={horse.photo_url}
+                      alt={horse.name}
+                      className="w-full h-full object-cover"
                     />
-                  </label>
+                  )}
+                  {!horse.photo_url && (
+                    <div className="w-full h-full flex items-center justify-center text-gray-600 text-sm">
+                      No photo yet
+                    </div>
+                  )}
+                  {/* Upload overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 hover:bg-opacity-50 transition group">
+                    <label className="cursor-pointer flex items-center justify-center w-full h-full">
+                      <span className="text-white text-sm font-medium opacity-0 group-hover:opacity-100 transition">
+                        {uploadingId === horse.id ? 'Uploading...' : '📷 Change photo'}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={uploadingId === horse.id}
+                        onChange={e => {
+                          const file = e.target.files?.[0]
+                          if (file) handlePhotoUpload(horse.id, file)
+                        }}
+                      />
+                    </label>
+                  </div>
                 </div>
 
                 <div className="p-5 space-y-2">
