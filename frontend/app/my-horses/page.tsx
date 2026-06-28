@@ -140,6 +140,24 @@ export default function MyHorses() {
     setHorses(prev => prev.filter(h => h.id !== id))
   }
 
+  const handlePhotoUpload = async (horseId: string, file: File) => {
+    const ext = file.name.split('.').pop()
+    const path = `${horseId}/${crypto.randomUUID()}.${ext}`
+
+    const { data, error } = await supabase.storage
+      .from('horse-photos')
+      .upload(path, file, { upsert: true })
+
+    if (error) { console.error(error); return }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('horse-photos')
+      .getPublicUrl(data.path)
+
+    await supabase.from('horse').update({ photo_url: publicUrl }).eq('id', horseId)
+    setHorses((prev) => prev.map((h) => h.id === horseId ? { ...h, photo_url: publicUrl } : h))
+  }
+
   const handleCancel = () => {
     setForm(emptyForm)
     setEditingId(null)
