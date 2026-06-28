@@ -22,7 +22,7 @@ interface Course {
 export default function CourseDetail() {
   const { id } = useParams()
   const [course, setCourse] = useState<Course | null>(null)
-  const [selectedInstance, setSelectedInstance] = useState<string>('')
+  const [selectedInstance, setSelectedInstance] = useState('')
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -47,26 +47,19 @@ export default function CourseDetail() {
 
       const instanceList = instances ?? []
       setCourse({ ...courseData, course_instance: instanceList })
-
-      if (instanceList.length === 1) {
-        setSelectedInstance(instanceList[0].course_instance_id)
-      }
+      if (instanceList.length === 1) setSelectedInstance(instanceList[0].course_instance_id)
     }
 
     fetchCourse()
   }, [id])
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data } = await supabase.auth.getUser()
+    supabase.auth.getUser().then(({ data }) => {
       if (data.user?.email) setEmail(data.user.email)
-    }
-    getUser()
+    })
   }, [])
 
   const handleEnrol = async () => {
-    console.log('selectedInstance:', selectedInstance)
-    console.log('email:', email)
     if (!selectedInstance) return setError('Please select a course instance')
     if (!email) return setError('Please enter your email')
 
@@ -77,21 +70,13 @@ export default function CourseDetail() {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          courseInstanceId: selectedInstance,
-          email,
-        }),
+        body: JSON.stringify({ courseInstanceId: selectedInstance, email }),
       })
 
       const data = await res.json()
-
-      if (!res.ok) {
-        setError(data.error || 'Something went wrong')
-        return
-      }
-
+      if (!res.ok) return setError(data.error || 'Something went wrong')
       window.location.href = data.url
-    } catch (err) {
+    } catch {
       setError('Something went wrong. Please try again.')
     } finally {
       setLoading(false)
@@ -124,7 +109,7 @@ export default function CourseDetail() {
         <p className="text-gray-400 mb-6">{course.description}</p>
         <p className="text-2xl font-bold text-indigo-400 mb-8">${course.price}</p>
 
-        {course.course_instance?.length > 1 && (
+        {course.course_instance.length > 1 && (
           <div className="mb-4">
             <label className="block text-sm text-gray-400 mb-2">Select a date</label>
             <select
@@ -143,22 +128,19 @@ export default function CourseDetail() {
           </div>
         )}
 
-        {course.course_instance?.length === 0 && (
+        {course.course_instance.length === 0 ? (
           <p className="text-gray-500 text-sm mb-6">No upcoming dates scheduled yet.</p>
-        )}
-
-        {course.course_instance?.length > 0 && (
+        ) : (
           <>
             <input
               type="email"
               placeholder="Your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleEnrol()}
               className="w-full bg-gray-800 text-white px-4 py-3 rounded-lg mb-6 outline-none border border-gray-700 focus:border-indigo-500"
             />
-
             {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
-
             <button
               onClick={handleEnrol}
               disabled={loading || !selectedInstance}
