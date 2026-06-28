@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
 
   const { data: instance, error } = await supabaseAdmin
     .from('course_instance')
-    .select('course_instance_id, course_id, course(title, price)')
+    .select('course_instance_id, course_id, course!course_instance_course_id_fkey(title, price)')
     .eq('course_instance_id', courseInstanceId)
     .single()
 
