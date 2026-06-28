@@ -38,6 +38,9 @@ export default function Navbar() {
 
         {user ? (
           <>
+            <Link href="/my-courses" className="text-gray-300 hover:text-white transition">
+              My Courses
+            </Link>
             <Link href="/create-course" className="text-gray-300 hover:text-white transition">
               Create Course
             </Link>
