@@ -26,11 +26,10 @@ interface EnrolledInstance {
   end_date: string
   role: string
   payment_status: string
-  course: {
-    id: string
-    title: string
-  }
+  course: { id: string; title: string }
 }
+
+const formatDate = (d: string) => new Date(d).toLocaleDateString('en-NZ')
 
 export default function MyCourses() {
   const [ownedCourses, setOwnedCourses] = useState<OwnedCourse[]>([])
@@ -44,28 +43,20 @@ export default function MyCourses() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
 
-      // Courses I own + their instances
-      const { data: owned } = await supabase
-        .from('course')
-        .select('id, title, description, price, course_instance(course_instance_id, start_date, end_date)')
-        .eq('owner_id', user.id)
-
-      // My enrolments (student + instructor roles)
-      const { data: enrolments } = await supabase
-        .from('enrolment')
-        .select(`
-          role,
-          status,
-          course_instance_id,
-          course_instance (
-            course_instance_id,
-            start_date,
-            end_date,
-            course ( id, title )
-          ),
-          orders ( status )
-        `)
-        .eq('profile_id', user.id)
+      const [{ data: owned }, { data: enrolments }] = await Promise.all([
+        supabase
+          .from('course')
+          .select('id, title, description, price, course_instance(course_instance_id, start_date, end_date)')
+          .eq('owner_id', user.id),
+        supabase
+          .from('enrolment')
+          .select(`
+            id, role, status, course_instance_id,
+            course_instance(course_instance_id, start_date, end_date, course(id, title)),
+            orders(status)
+          `)
+          .eq('profile_id', user.id),
+      ])
 
       setOwnedCourses((owned as OwnedCourse[]) ?? [])
 
@@ -74,13 +65,12 @@ export default function MyCourses() {
 
       for (const e of enrolments ?? []) {
         const ci = e.course_instance as any
-        const order = (e.orders as any[])?.[0]
         const item: EnrolledInstance = {
           course_instance_id: ci.course_instance_id,
           start_date: ci.start_date,
           end_date: ci.end_date,
           role: e.role,
-          payment_status: order?.status ?? 'unknown',
+          payment_status: (e.orders as any[])?.[0]?.status ?? 'unknown',
           course: ci.course,
         }
         if (e.role === 'instructor') supporting.push(item)
@@ -95,16 +85,12 @@ export default function MyCourses() {
     load()
   }, [])
 
-  const formatDate = (d: string) => new Date(d).toLocaleDateString('en-NZ')
-
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
-        <Navbar />
-        <p className="text-gray-400">Loading...</p>
-      </main>
-    )
-  }
+  if (loading) return (
+    <main className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+      <Navbar />
+      <p className="text-gray-400">Loading...</p>
+    </main>
+  )
 
   return (
     <main className="min-h-screen bg-gray-950 text-white pt-28 px-6 pb-16">
@@ -112,7 +98,6 @@ export default function MyCourses() {
       <div className="max-w-4xl mx-auto space-y-12">
         <h1 className="text-3xl font-bold">My Courses</h1>
 
-        {/* Courses I Own */}
         <section>
           <h2 className="text-xl font-semibold mb-4 text-indigo-400">Courses I Own</h2>
           {ownedCourses.length === 0 ? (
@@ -152,7 +137,6 @@ export default function MyCourses() {
           )}
         </section>
 
-        {/* Supporting Instructor */}
         {supportingInstances.length > 0 && (
           <section>
             <h2 className="text-xl font-semibold mb-4 text-indigo-400">Courses I'm Supporting</h2>
@@ -174,7 +158,6 @@ export default function MyCourses() {
           </section>
         )}
 
-        {/* Enrolled */}
         <section>
           <h2 className="text-xl font-semibold mb-4 text-indigo-400">Courses I'm Enrolled In</h2>
           {enrolledInstances.length === 0 ? (
