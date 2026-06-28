@@ -65,6 +65,8 @@ export default function CourseDetail() {
   }, [])
 
   const handleEnrol = async () => {
+    console.log('selectedInstance:', selectedInstance)
+    console.log('email:', email)
     if (!selectedInstance) return setError('Please select a course instance')
     if (!email) return setError('Please enter your email')
 
