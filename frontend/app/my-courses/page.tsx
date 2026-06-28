@@ -43,7 +43,7 @@ export default function MyCourses() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
 
-      const [{ data: owned }, { data: enrolments }] = await Promise.all([
+      const [ownedRes, enrolmentsRes] = await Promise.all([
         supabase
           .from('course')
           .select('id, title, description, price, course_instance(course_instance_id, start_date, end_date)')
@@ -57,6 +57,15 @@ export default function MyCourses() {
           `)
           .eq('profile_id', user.id),
       ])
+
+      console.log('user.id:', user.id)
+      console.log('enrolments data:', enrolmentsRes.data)
+      console.log('enrolments error:', enrolmentsRes.error)
+      console.log('owned data:', ownedRes.data)
+      console.log('owned error:', ownedRes.error)
+
+      const owned = ownedRes.data
+      const enrolments = enrolmentsRes.data
 
       setOwnedCourses((owned as OwnedCourse[]) ?? [])
 
