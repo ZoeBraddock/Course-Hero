@@ -87,12 +87,17 @@ export default function MyHorses() {
     const ext = file.name.split('.').pop()
     const path = `${userId}/${horseId}.${ext}`
 
-    // Remove old photo if exists
+    console.log('Uploading to path:', path)
+    console.log('File type:', file.type)
+
     await supabase.storage.from('horse-photos').remove([`${userId}/${horseId}`])
 
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError, data: uploadData } = await supabase.storage
       .from('horse-photos')
       .upload(path, file, { upsert: true })
+
+    console.log('Upload result:', uploadData)
+    console.log('Upload error:', uploadError)
 
     if (uploadError) {
       setError(uploadError.message)
@@ -103,6 +108,8 @@ export default function MyHorses() {
     const { data: { publicUrl } } = supabase.storage
       .from('horse-photos')
       .getPublicUrl(path)
+
+    console.log('Public URL:', publicUrl)
 
     await supabase.from('horse').update({ photo_url: publicUrl }).eq('id', horseId)
     setHorses(prev => prev.map(h => h.id === horseId ? { ...h, photo_url: publicUrl } : h))
@@ -158,7 +165,6 @@ export default function MyHorses() {
           )}
         </div>
 
-        {/* Form */}
         {showForm && (
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4">
             <h2 className="text-lg font-semibold">{editingId ? 'Edit Horse' : 'New Horse'}</h2>
@@ -217,21 +223,18 @@ export default function MyHorses() {
           </div>
         )}
 
-        {/* Horse list */}
         {horses.length === 0 && !showForm ? (
           <p className="text-gray-500">No horses yet — add your first one!</p>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2">
             {horses.map(horse => (
               <div key={horse.id} className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-                {/* Photo */}
                 <div className="relative h-48 bg-gray-800 group">
                   {horse.photo_url ? (
                     <img src={horse.photo_url} alt={horse.name} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-600 text-sm">No photo yet</div>
                   )}
-                  {/* Upload overlay */}
                   <label className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 group-hover:bg-opacity-50 transition cursor-pointer">
                     <span className="text-white text-sm font-medium opacity-0 group-hover:opacity-100 transition">
                       {uploadingId === horse.id ? 'Uploading...' : '📷 Change photo'}
@@ -249,7 +252,6 @@ export default function MyHorses() {
                   </label>
                 </div>
 
-                {/* Info */}
                 <div className="p-5 space-y-2">
                   <h3 className="text-lg font-bold">{horse.name}</h3>
                   <div className="text-sm text-gray-400 space-y-1">
