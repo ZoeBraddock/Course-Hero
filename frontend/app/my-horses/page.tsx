@@ -95,6 +95,24 @@ export default function MyHorses() {
     setHorses((prev) => prev.filter((h) => h.id !== id))
   }
 
+  const handlePhotoUpload = async (horseId: string, file: File) => {
+    const ext = file.name.split('.').pop()
+    const path = `${horseId}/${crypto.randomUUID()}.${ext}`
+
+    const { data, error } = await supabase.storage
+      .from('horse-photos')
+      .upload(path, file, { upsert: true })
+
+    if (error) { console.error(error); return }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('horse-photos')
+      .getPublicUrl(data.path)
+
+    await supabase.from('horse').update({ photo_url: publicUrl }).eq('id', horseId)
+    setHorses((prev) => prev.map((h) => h.id === horseId ? { ...h, photo_url: publicUrl } : h))
+  }
+
   const handleCancel = () => {
     setForm(emptyForm)
     setEditingId(null)
@@ -207,12 +225,22 @@ export default function MyHorses() {
           <div className="grid gap-6 sm:grid-cols-2">
             {horses.map((horse) => (
               <div key={horse.id} className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-                {/* Photo placeholder */}
-                <div className="h-40 bg-gray-800 flex items-center justify-center text-gray-600 text-sm">
+                <div className="relative h-40 bg-gray-800">
                   {horse.photo_url
                     ? <img src={horse.photo_url} alt={horse.name} className="w-full h-full object-cover" />
-                    : '📷 Photo coming soon'
+                    : <div className="w-full h-full flex items-center justify-center text-gray-600 text-sm">📷 No photo yet</div>
                   }
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/50 transition group">
+                    <label className="cursor-pointer flex items-center justify-center w-full h-full">
+                      <span className="text-white text-sm font-medium opacity-0 group-hover:opacity-100 transition">📷 Change photo</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(horse.id, f) }}
+                      />
+                    </label>
+                  </div>
                 </div>
                 <div className="p-5 space-y-2">
                   <h3 className="text-lg font-bold">{horse.name}</h3>

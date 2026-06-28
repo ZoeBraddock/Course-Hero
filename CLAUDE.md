@@ -6,8 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```
 /frontend/   — Next.js 16 (App Router) frontend
-/supabase/   — Supabase migrations and config
-/shopify/    — Shopify integration (separate Next.js-like app)
+/supabase/   — Supabase migrations and config COMPLETE INACCURATE. However, the photo in databasemodel.png is accurate
 ```
 
 ## Commands
