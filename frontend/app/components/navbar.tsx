@@ -41,6 +41,9 @@ export default function Navbar() {
             <Link href="/my-courses" className="text-gray-300 hover:text-white transition">
               My Courses
             </Link>
+            <Link href="/my-horses" className="text-gray-300 hover:text-white transition">
+              My Horses
+            </Link>
             <div className="relative">
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
@@ -60,13 +63,6 @@ export default function Navbar() {
                     onClick={() => setMenuOpen(false)}
                   >
                     Account
-                  </Link>
-                  <Link
-                    href="/my-horses"
-                    className="block px-4 py-2 text-gray-300 hover:bg-gray-800 hover:text-white transition"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    My Horses
                   </Link>
                   <button
                     onClick={handleLogout}
