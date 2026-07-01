@@ -357,7 +357,7 @@ export default function MyCourses() {
                     <>
                       <div className="flex justify-between items-start mb-3">
                         <div>
-                          <h3 className="text-lg font-semibold">{course.title}</h3>
+                          <Link href={`/course/${course.id}`} className="text-lg font-semibold hover:text-indigo-400 transition">{course.title}</Link>
                           <p className="text-gray-400 text-sm">{course.description}</p>
                         </div>
                         <div className="flex items-center gap-3">
