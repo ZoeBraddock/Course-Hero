@@ -9,38 +9,31 @@ export default function CreateCourse() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [price, setPrice] = useState('')
-  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
   const [user, setUser] = useState<any>(null)
   const router = useRouter()
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data } = await supabase.auth.getUser()
-      if (!data.user) {
-        router.push('/login')
-      } else {
-        setUser(data.user)
-      }
-    }
-    getUser()
+    supabase.auth.getUser().then(({ data }) => {
+      if (!data.user) router.push('/login')
+      else setUser(data.user)
+    })
   }, [])
 
   const handleCreateCourse = async () => {
-    const { error } = await supabase.from('course').insert({
+    if (!title.trim()) return setError('Title is required')
+    if (!price) return setError('Price is required')
+    setSaving(true)
+    setError('')
+    const { error: err } = await supabase.from('course').insert({
       title,
       description,
       price: parseFloat(price),
-      owner_id: user.id, // fixed: was primary_instructor
+      owner_id: user.id,
     })
-
-    if (error) {
-      setMessage(`Error: ${error.message}`)
-    } else {
-      setMessage('Course created!')
-      setTitle('')
-      setDescription('')
-      setPrice('')
-    }
+    if (err) { setError(err.message); setSaving(false); return }
+    router.push('/my-courses')
   }
 
   if (!user) return null
@@ -55,7 +48,7 @@ export default function CreateCourse() {
         <form onSubmit={(e) => { e.preventDefault(); handleCreateCourse() }}>
           <input
             type="text"
-            placeholder="Course Title"
+            placeholder="Course Title *"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="w-full bg-gray-800 text-white px-4 py-3 rounded-lg mb-4 outline-none border border-gray-700 focus:border-indigo-500"
@@ -68,21 +61,21 @@ export default function CreateCourse() {
           />
           <input
             type="number"
-            placeholder="Price"
+            placeholder="Price *"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
             className="w-full bg-gray-800 text-white px-4 py-3 rounded-lg mb-6 outline-none border border-gray-700 focus:border-indigo-500"
           />
-
           <button
             type="submit"
-            className="w-full bg-indigo-500 hover:bg-indigo-400 text-white font-semibold py-3 rounded-full transition"
+            disabled={saving}
+            className="w-full bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white font-semibold py-3 rounded-full transition"
           >
-            Create Course
+            {saving ? 'Creating...' : 'Create Course'}
           </button>
         </form>
 
-        {message && <p className="mt-4 text-sm text-gray-300">{message}</p>}
+        {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
       </div>
     </main>
   )
