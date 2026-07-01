@@ -28,6 +28,8 @@ interface InstanceDetail {
     title: string
     description: string
     price: number
+    owner_id: string
+    banner_url: string | null
   }
 }
 
@@ -51,21 +53,14 @@ export default function InstanceDetail() {
       // Fetch instance + course details
       const { data: inst } = await supabase
         .from('course_instance')
-        .select('course_instance_id, start_date, end_date, fb_group_invite_url, course!course_instance_course_id_fkey(id, title, description, price)')
+        .select('course_instance_id, start_date, end_date, fb_group_invite_url, course!course_instance_course_id_fkey(id, title, description, price, owner_id, banner_url)')
         .eq('course_instance_id', instanceId)
         .single()
 
       if (!inst) { router.push('/my-courses'); return }
       setInstance(inst as any)
 
-      // Check if user is owner of this course
-      const { data: course } = await supabase
-        .from('course')
-        .select('owner_id')
-        .eq('id', id)
-        .single()
-
-      const ownerCheck = course?.owner_id === user.id
+      const ownerCheck = (inst.course as any)?.owner_id === user.id
       setIsOwner(ownerCheck)
 
       if (ownerCheck) {
@@ -171,14 +166,23 @@ export default function InstanceDetail() {
 
         {/* Header */}
         <div>
-          <p className="text-gray-400 text-sm mb-1">
+          <p className="text-gray-400 text-sm mb-3">
             <button onClick={() => router.push('/my-courses')} className="hover:text-white transition">
               ← My Courses
             </button>
           </p>
-          <h1 className="text-3xl font-bold">{course.title}</h1>
-          <p className="text-gray-400 mt-1">{course.description}</p>
-          <p className="text-indigo-400 font-bold mt-2">${course.price}</p>
+          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden flex flex-col sm:flex-row">
+            {course.banner_url && (
+              <div className="relative aspect-[3/4] sm:aspect-auto sm:w-40 flex-shrink-0 bg-gray-800">
+                <img src={course.banner_url} alt="Banner" className="absolute inset-0 w-full h-full object-cover" />
+              </div>
+            )}
+            <div className="p-6">
+              <h1 className="text-3xl font-bold">{course.title}</h1>
+              <p className="text-gray-400 mt-1">{course.description}</p>
+              <p className="text-indigo-400 font-bold mt-2">${course.price}</p>
+            </div>
+          </div>
         </div>
 
         {/* Instance info */}

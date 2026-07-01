@@ -20,7 +20,6 @@ interface Course {
   price: number
   owner_id: string
   banner_url: string | null
-  profile_pic_url: string | null
   course_instance: CourseInstance[]
 }
 
@@ -42,7 +41,7 @@ export default function CourseDetail() {
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState({ title: '', description: '', price: '' })
   const [saving, setSaving] = useState(false)
-  const [uploadingImage, setUploadingImage] = useState<'banner' | 'profile_pic' | null>(null)
+  const [uploadingBanner, setUploadingBanner] = useState(false)
   const [showInstanceForm, setShowInstanceForm] = useState(false)
   const [instanceForm, setInstanceForm] = useState(emptyInstanceForm)
   const [editingInstanceId, setEditingInstanceId] = useState<string | null>(null)
@@ -99,19 +98,18 @@ export default function CourseDetail() {
     setSaving(false)
   }
 
-  const handleImageUpload = async (file: File, type: 'banner' | 'profile_pic') => {
+  const handleBannerUpload = async (file: File) => {
     if (!userId || !course) return
-    setUploadingImage(type)
+    setUploadingBanner(true)
     const ext = file.name.split('.').pop()
-    const path = `${userId}/${course.id}_${type}.${ext}`
+    const path = `${userId}/${course.id}_banner.${ext}`
     const { error: uploadErr } = await supabase.storage.from('course-images').upload(path, file, { upsert: true })
-    if (uploadErr) { setError(uploadErr.message); setUploadingImage(null); return }
+    if (uploadErr) { setError(uploadErr.message); setUploadingBanner(false); return }
     const { data: { publicUrl } } = supabase.storage.from('course-images').getPublicUrl(path)
-    const column = type === 'banner' ? 'banner_url' : 'profile_pic_url'
-    const { error: updateErr } = await supabase.from('course').update({ [column]: publicUrl }).eq('id', course.id)
-    if (updateErr) { setError(updateErr.message); setUploadingImage(null); return }
-    setCourse(prev => prev ? { ...prev, [column]: `${publicUrl}?t=${Date.now()}` } : prev)
-    setUploadingImage(null)
+    const { error: updateErr } = await supabase.from('course').update({ banner_url: publicUrl }).eq('id', course.id)
+    if (updateErr) { setError(updateErr.message); setUploadingBanner(false); return }
+    setCourse(prev => prev ? { ...prev, banner_url: `${publicUrl}?t=${Date.now()}` } : prev)
+    setUploadingBanner(false)
   }
 
   const handleSaveInstance = async () => {
@@ -190,8 +188,7 @@ export default function CourseDetail() {
     </main>
   )
 
-  const hasBannerArea = !!(course.banner_url || isOwner)
-  const hasProfilePicArea = !!(course.profile_pic_url || isOwner)
+  const hasBanner = !!(course.banner_url || isOwner)
 
   const instanceFormBlock = (saveLabel: string, onCancel: () => void) => (
     <div className="bg-gray-800 border border-indigo-500 rounded-lg p-4 space-y-3">
@@ -220,50 +217,27 @@ export default function CourseDetail() {
     <main className="min-h-screen bg-gray-950 text-white pt-20 px-6 pb-16">
       <Navbar />
       <div className="max-w-3xl mx-auto">
-        <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+        <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden flex flex-col sm:flex-row">
 
-          {/* Banner + profile pic */}
-          {hasBannerArea && (
-            <div className="relative h-48 bg-gray-800">
+          {/* Portrait banner */}
+          {hasBanner && (
+            <div className="relative aspect-[3/4] sm:aspect-auto sm:w-52 flex-shrink-0 bg-gray-800">
               {course.banner_url
-                ? <img src={course.banner_url} alt="Banner" className="w-full h-full object-cover" />
-                : <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-700" />
+                ? <img src={course.banner_url} alt="Banner" className="absolute inset-0 w-full h-full object-cover" />
+                : <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-700" />
               }
               {isOwner && (
                 <label className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/40 transition cursor-pointer group">
-                  <span className="text-white text-sm opacity-0 group-hover:opacity-100 transition">
-                    {uploadingImage === 'banner' ? 'Uploading...' : '📷 Set banner'}
+                  <span className="text-white text-sm opacity-0 group-hover:opacity-100 transition text-center px-2">
+                    {uploadingBanner ? 'Uploading...' : '📷 Set banner'}
                   </span>
-                  <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f, 'banner'); e.target.value = '' }} />
+                  <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleBannerUpload(f); e.target.value = '' }} />
                 </label>
-              )}
-              {hasProfilePicArea && (
-                <div className="absolute -bottom-8 left-8">
-                  {isOwner ? (
-                    <label className="cursor-pointer group block relative w-16 h-16">
-                      {course.profile_pic_url
-                        ? <img src={course.profile_pic_url} alt="Profile" className="w-16 h-16 rounded-full object-cover border-4 border-gray-900" />
-                        : <div className="w-16 h-16 rounded-full bg-gray-700 border-4 border-gray-900 flex items-center justify-center text-gray-500 text-xs">Pic</div>
-                      }
-                      <div className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/50 transition flex items-center justify-center">
-                        <span className="text-white text-xs opacity-0 group-hover:opacity-100 transition">
-                          {uploadingImage === 'profile_pic' ? '...' : '📷'}
-                        </span>
-                      </div>
-                      <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f, 'profile_pic'); e.target.value = '' }} />
-                    </label>
-                  ) : course.profile_pic_url && (
-                    <img src={course.profile_pic_url} alt="Profile" className="w-16 h-16 rounded-full object-cover border-4 border-gray-900" />
-                  )}
-                </div>
               )}
             </div>
           )}
 
-          <div className={`p-8 ${hasBannerArea && hasProfilePicArea ? 'pt-12' : 'pt-8'}`}>
-            {!hasBannerArea && course.profile_pic_url && (
-              <img src={course.profile_pic_url} alt="Profile" className="w-16 h-16 rounded-full object-cover mb-4" />
-            )}
+          <div className="p-8 flex-1 min-w-0">
 
             {/* Course details */}
             {editing ? (

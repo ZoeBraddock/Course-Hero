@@ -21,7 +21,6 @@ interface Course {
   created_at: string
   course_instance: Instance[]
   banner_url: string | null
-  profile_pic_url: string | null
 }
 
 interface EnrolledInstance {
@@ -30,7 +29,7 @@ interface EnrolledInstance {
   end_date: string
   role: string
   payment_status: string
-  course: { id: string; title: string; banner_url: string | null; profile_pic_url: string | null }
+  course: { id: string; title: string; banner_url: string | null }
 }
 
 type OwnedFilter = 'all' | 'upcoming'
@@ -66,7 +65,7 @@ export default function MyCourses() {
 
   const [error, setError] = useState('')
   const [userId, setUserId] = useState<string | null>(null)
-  const [uploadingImage, setUploadingImage] = useState<{ courseId: string; type: 'banner' | 'profile_pic' } | null>(null)
+  const [uploadingBannerId, setUploadingBannerId] = useState<string | null>(null)
 
   const [ownedFilter, setOwnedFilter] = useState<OwnedFilter>('all')
   const [ownedSort, setOwnedSort] = useState<OwnedSort>('recent')
@@ -85,11 +84,11 @@ export default function MyCourses() {
     const [ownedRes, enrolmentsRes] = await Promise.all([
       supabase
         .from('course')
-        .select('id, title, description, price, created_at, banner_url, profile_pic_url, course_instance(course_instance_id, start_date, end_date, fb_group_invite_url)')
+        .select('id, title, description, price, created_at, banner_url, course_instance(course_instance_id, start_date, end_date, fb_group_invite_url)')
         .eq('owner_id', user.id),
       supabase
         .from('enrolment')
-        .select('id, role, status, course_instance_id, course_instance(course_instance_id, start_date, end_date, course(id, title, banner_url, profile_pic_url)), orders(status)')
+        .select('id, role, status, course_instance_id, course_instance(course_instance_id, start_date, end_date, course(id, title, banner_url)), orders(status)')
         .eq('profile_id', user.id),
     ])
 
@@ -158,37 +157,19 @@ export default function MyCourses() {
 
   // ── Course image uploads ─────────────────────────────────
 
-  const handleCourseImageUpload = async (courseId: string, file: File, type: 'banner' | 'profile_pic') => {
+  const handleBannerUpload = async (courseId: string, file: File) => {
     if (!userId) return
-    setUploadingImage({ courseId, type })
+    setUploadingBannerId(courseId)
     setError('')
-
     const ext = file.name.split('.').pop()
-    const path = `${userId}/${courseId}_${type}.${ext}`
-
-    const { error: uploadError } = await supabase.storage
-      .from('course-images')
-      .upload(path, file, { upsert: true })
-
-    if (uploadError) { setError(uploadError.message); setUploadingImage(null); return }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('course-images')
-      .getPublicUrl(path)
-
-    const column = type === 'banner' ? 'banner_url' : 'profile_pic_url'
-
-    const { error: updateError } = await supabase
-      .from('course')
-      .update({ [column]: publicUrl })
-      .eq('id', courseId)
-
-    if (updateError) { setError(updateError.message); setUploadingImage(null); return }
-
-    setOwnedCourses(prev => prev.map(c =>
-      c.id === courseId ? { ...c, [column]: `${publicUrl}?t=${Date.now()}` } : c
-    ))
-    setUploadingImage(null)
+    const path = `${userId}/${courseId}_banner.${ext}`
+    const { error: uploadError } = await supabase.storage.from('course-images').upload(path, file, { upsert: true })
+    if (uploadError) { setError(uploadError.message); setUploadingBannerId(null); return }
+    const { data: { publicUrl } } = supabase.storage.from('course-images').getPublicUrl(path)
+    const { error: updateError } = await supabase.from('course').update({ banner_url: publicUrl }).eq('id', courseId)
+    if (updateError) { setError(updateError.message); setUploadingBannerId(null); return }
+    setOwnedCourses(prev => prev.map(c => c.id === courseId ? { ...c, banner_url: `${publicUrl}?t=${Date.now()}` } : c))
+    setUploadingBannerId(null)
   }
 
   // ── Course CRUD ──────────────────────────────────────────
@@ -221,7 +202,7 @@ export default function MyCourses() {
         .single()
 
       if (err) { setError(err.message); setSavingCourse(false); return }
-      setOwnedCourses(prev => [{ ...data, course_instance: [], banner_url: null, profile_pic_url: null }, ...prev])
+      setOwnedCourses(prev => [{ ...data, course_instance: [], banner_url: null }, ...prev])
     }
 
     setCourseForm(emptyCourseForm)
@@ -405,32 +386,18 @@ export default function MyCourses() {
                         </div>
                       </div>
 
-                      {/* Course images */}
-                      <div className="flex gap-3 mb-4">
-                        <div className="flex-1 relative h-28 bg-gray-800 rounded-lg overflow-hidden group">
-                          {course.banner_url
-                            ? <img src={course.banner_url} alt="Banner" className="w-full h-full object-cover" />
-                            : <div className="w-full h-full flex items-center justify-center text-gray-600 text-xs">No banner</div>
-                          }
-                          <label className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/50 transition cursor-pointer">
-                            <span className="text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition">
-                              {uploadingImage?.courseId === course.id && uploadingImage?.type === 'banner' ? 'Uploading...' : '📷 Set banner'}
-                            </span>
-                            <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleCourseImageUpload(course.id, f, 'banner'); e.target.value = '' }} />
-                          </label>
-                        </div>
-                        <div className="relative w-28 h-28 bg-gray-800 rounded-lg overflow-hidden group flex-shrink-0">
-                          {course.profile_pic_url
-                            ? <img src={course.profile_pic_url} alt="Profile" className="w-full h-full object-cover" />
-                            : <div className="w-full h-full flex items-center justify-center text-gray-600 text-xs text-center px-2">No profile pic</div>
-                          }
-                          <label className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/50 transition cursor-pointer">
-                            <span className="text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition text-center px-1">
-                              {uploadingImage?.courseId === course.id && uploadingImage?.type === 'profile_pic' ? 'Uploading...' : '📷 Set pic'}
-                            </span>
-                            <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleCourseImageUpload(course.id, f, 'profile_pic'); e.target.value = '' }} />
-                          </label>
-                        </div>
+                      {/* Banner */}
+                      <div className="relative aspect-[3/4] w-32 bg-gray-800 rounded-lg overflow-hidden group mb-4">
+                        {course.banner_url
+                          ? <img src={course.banner_url} alt="Banner" className="w-full h-full object-cover" />
+                          : <div className="w-full h-full flex items-center justify-center text-gray-600 text-xs">No banner</div>
+                        }
+                        <label className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/50 transition cursor-pointer">
+                          <span className="text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition text-center px-1">
+                            {uploadingBannerId === course.id ? 'Uploading...' : '📷 Set banner'}
+                          </span>
+                          <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleBannerUpload(course.id, f); e.target.value = '' }} />
+                        </label>
                       </div>
 
                       <div className="space-y-2">
@@ -511,20 +478,15 @@ export default function MyCourses() {
             <h2 className="text-xl font-semibold mb-4 text-indigo-400">Courses I'm Supporting</h2>
             <div className="space-y-2">
               {supportingInstances.map(inst => (
-                <Link key={inst.course_instance_id} href={`/course/${inst.course.id}/instance/${inst.course_instance_id}`} className="bg-gray-900 border border-gray-800 hover:border-indigo-500 rounded-xl overflow-hidden transition block">
-                  <div className="relative h-24 bg-gray-800">
+                <Link key={inst.course_instance_id} href={`/course/${inst.course.id}/instance/${inst.course_instance_id}`} className="flex items-center gap-4 bg-gray-900 border border-gray-800 hover:border-indigo-500 rounded-xl overflow-hidden transition px-4 py-3">
+                  <div className="relative aspect-[3/4] w-12 flex-shrink-0 bg-gray-800 rounded overflow-hidden">
                     {inst.course.banner_url && <img src={inst.course.banner_url} alt="" className="w-full h-full object-cover" />}
-                    {inst.course.profile_pic_url && (
-                      <img src={inst.course.profile_pic_url} alt="" className="absolute -bottom-4 left-4 w-8 h-8 rounded-full object-cover border-2 border-gray-900" />
-                    )}
                   </div>
-                  <div className={`flex justify-between items-center px-4 py-3 ${inst.course.profile_pic_url ? 'pt-6' : 'pt-3'}`}>
-                    <div>
-                      <p className="font-medium">{inst.course.title}</p>
-                      <p className="text-sm text-gray-400">{formatDate(inst.start_date)} – {formatDate(inst.end_date)}</p>
-                    </div>
-                    <span className="text-xs text-indigo-400">View →</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{inst.course.title}</p>
+                    <p className="text-sm text-gray-400">{formatDate(inst.start_date)} – {formatDate(inst.end_date)}</p>
                   </div>
+                  <span className="text-xs text-indigo-400 flex-shrink-0">View →</span>
                 </Link>
               ))}
             </div>
@@ -560,22 +522,17 @@ export default function MyCourses() {
           ) : (
             <div className="space-y-2">
               {filteredEnrolled.map(inst => (
-                <Link key={inst.course_instance_id} href={`/course/${inst.course.id}/instance/${inst.course_instance_id}`} className="bg-gray-900 border border-gray-800 hover:border-indigo-500 rounded-xl overflow-hidden transition block">
-                  <div className="relative h-24 bg-gray-800">
+                <Link key={inst.course_instance_id} href={`/course/${inst.course.id}/instance/${inst.course_instance_id}`} className="flex items-center gap-4 bg-gray-900 border border-gray-800 hover:border-indigo-500 rounded-xl overflow-hidden transition px-4 py-3">
+                  <div className="relative aspect-[3/4] w-12 flex-shrink-0 bg-gray-800 rounded overflow-hidden">
                     {inst.course.banner_url && <img src={inst.course.banner_url} alt="" className="w-full h-full object-cover" />}
-                    {inst.course.profile_pic_url && (
-                      <img src={inst.course.profile_pic_url} alt="" className="absolute -bottom-4 left-4 w-8 h-8 rounded-full object-cover border-2 border-gray-900" />
-                    )}
                   </div>
-                  <div className={`flex justify-between items-center px-4 py-3 ${inst.course.profile_pic_url ? 'pt-6' : 'pt-3'}`}>
-                    <div>
-                      <p className="font-medium">{inst.course.title}</p>
-                      <p className="text-sm text-gray-400">{formatDate(inst.start_date)} – {formatDate(inst.end_date)}</p>
-                    </div>
-                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${inst.payment_status === 'paid' ? 'bg-green-900 text-green-400' : 'bg-yellow-900 text-yellow-400'}`}>
-                      {inst.payment_status}
-                    </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{inst.course.title}</p>
+                    <p className="text-sm text-gray-400">{formatDate(inst.start_date)} – {formatDate(inst.end_date)}</p>
                   </div>
+                  <span className={`text-xs font-medium px-2 py-1 rounded-full flex-shrink-0 ${inst.payment_status === 'paid' ? 'bg-green-900 text-green-400' : 'bg-yellow-900 text-yellow-400'}`}>
+                    {inst.payment_status}
+                  </span>
                 </Link>
               ))}
             </div>
