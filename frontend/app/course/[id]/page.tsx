@@ -57,7 +57,7 @@ export default function CourseDetail() {
 
       const { data, error: err } = await supabase
         .from('course')
-        .select('id, title, description, price, owner_id, banner_url, profile_pic_url, course_instance(course_instance_id, start_date, end_date, fb_group_invite_url)')
+        .select('id, title, description, price, owner_id, banner_url, course_instance(course_instance_id, start_date, end_date, fb_group_invite_url)')
         .eq('id', id)
         .single()
 

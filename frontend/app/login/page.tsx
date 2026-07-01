@@ -8,20 +8,13 @@ import Navbar from '../components/navbar'
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [message, setMessage] = useState('')
+  const [error, setError] = useState<string>('')
   const router = useRouter()
 
   const handleLogin = async () => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password,
-    })
-
-    if (error) {
-      setMessage(`Error: ${error.message}`)
-    } else {
-      router.push('/account')
-    }
+    const { error: err } = await supabase.auth.signInWithPassword({ email, password })
+    if (err) setError(err.message)
+    else router.push('/my-courses')
   }
 
   return (
@@ -31,7 +24,7 @@ export default function Login() {
         <h1 className="text-3xl font-bold mb-2">Log In</h1>
         <p className="text-gray-400 mb-8">Welcome back to Course Hero</p>
 
-        <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
+        <form onSubmit={(e) => { e.preventDefault(); handleLogin() }}>
           <input
             type="email"
             name="email"
@@ -50,16 +43,16 @@ export default function Login() {
             onChange={(e) => setPassword(e.target.value)}
             className="w-full bg-gray-800 text-white px-4 py-3 rounded-lg mb-6 outline-none border border-gray-700 focus:border-indigo-500"
           />
-
-          <button
-            type="submit"
-            className="w-full bg-indigo-500 hover:bg-indigo-400 text-white font-semibold py-3 rounded-full transition"
-          >
+          <button type="submit" className="w-full bg-indigo-500 hover:bg-indigo-400 text-white font-semibold py-3 rounded-full transition">
             Log In
           </button>
         </form>
 
-        {message && <p className="mt-4 text-sm text-gray-300">{message}</p>}
+        {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
+        <p className="mt-6 text-sm text-gray-500">
+          Don't have an account?{' '}
+          <a href="/signup" className="text-indigo-400 hover:text-indigo-300 transition">Sign up</a>
+        </p>
       </div>
     </main>
   )
