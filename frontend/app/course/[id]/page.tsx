@@ -208,52 +208,58 @@ export default function CourseDetail() {
       <Navbar />
       <div className="max-w-3xl mx-auto px-6 space-y-4 mt-8">
 
-        {/* Banner */}
-        <div className="relative w-full h-56 sm:h-80 bg-gray-900 rounded-2xl overflow-hidden">
-          {course.banner_url
-            ? <img src={course.banner_url} alt="" className="absolute inset-0 w-full h-full object-cover object-top" />
-            : <div className="absolute inset-0 bg-gradient-to-br from-indigo-950 via-gray-900 to-gray-900" />
-          }
-          {isOwner && (
-            <label className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/50 transition cursor-pointer group">
-              <span className="text-white text-sm font-medium opacity-0 group-hover:opacity-100 transition bg-black/60 px-4 py-2 rounded-full">
-                {uploadingBanner ? 'Uploading...' : '📷 Set banner'}
-              </span>
-              <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleBannerUpload(f); e.target.value = '' }} />
-            </label>
-          )}
-        </div>
+        {/* Portrait banner alongside course info */}
+        <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden flex flex-col sm:flex-row">
 
-        {/* Course info */}
-        <div className="bg-gray-900 rounded-2xl border border-gray-800 p-8">
-          {editing ? (
-            <div className="space-y-3">
-              <input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="w-full bg-gray-800 text-white px-4 py-3 rounded-lg outline-none border border-gray-700 focus:border-indigo-500 text-xl font-bold" />
-              <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={3} className="w-full bg-gray-800 text-white px-4 py-3 rounded-lg outline-none border border-gray-700 focus:border-indigo-500" />
-              <input type="number" placeholder="Price" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} className="w-full bg-gray-800 text-white px-4 py-3 rounded-lg outline-none border border-gray-700 focus:border-indigo-500" />
-              {error && <p className="text-red-400 text-sm">{error}</p>}
-              <div className="flex gap-3">
-                <button onClick={handleSaveCourse} disabled={saving} className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2 rounded-full transition">{saving ? 'Saving...' : 'Save'}</button>
-                <button onClick={() => { setEditing(false); setError('') }} className="text-gray-400 hover:text-white text-sm px-4 py-2 transition">Cancel</button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex justify-between items-start gap-4">
-              <div>
-                <h1 className="text-3xl font-bold mb-2">{course.title}</h1>
-                <p className="text-gray-400 mb-5">{course.description}</p>
-                <span className="text-2xl font-bold text-indigo-400">${course.price}</span>
-              </div>
+          {/* Banner — portrait strip, stretches full height of card */}
+          {(course.banner_url || isOwner) && (
+            <div className="relative aspect-[3/4] sm:aspect-auto sm:w-56 flex-shrink-0 bg-gray-800">
+              {course.banner_url
+                ? <img src={course.banner_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                : <div className="absolute inset-0 bg-gradient-to-br from-indigo-950 via-gray-900 to-gray-800" />
+              }
               {isOwner && (
-                <button
-                  onClick={() => { setForm({ title: course.title, description: course.description, price: String(course.price) }); setEditing(true) }}
-                  className="text-sm text-gray-500 hover:text-white transition flex-shrink-0 border border-gray-700 hover:border-gray-500 px-3 py-1.5 rounded-lg"
-                >
-                  Edit
-                </button>
+                <label className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/50 transition cursor-pointer group">
+                  <span className="text-white text-sm font-medium opacity-0 group-hover:opacity-100 transition bg-black/60 px-4 py-2 rounded-full">
+                    {uploadingBanner ? 'Uploading...' : '📷 Set banner'}
+                  </span>
+                  <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleBannerUpload(f); e.target.value = '' }} />
+                </label>
               )}
             </div>
           )}
+
+          {/* Course info */}
+          <div className="p-8 flex-1 min-w-0">
+            {editing ? (
+              <div className="space-y-3">
+                <input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="w-full bg-gray-800 text-white px-4 py-3 rounded-lg outline-none border border-gray-700 focus:border-indigo-500 text-xl font-bold" />
+                <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={3} className="w-full bg-gray-800 text-white px-4 py-3 rounded-lg outline-none border border-gray-700 focus:border-indigo-500" />
+                <input type="number" placeholder="Price" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} className="w-full bg-gray-800 text-white px-4 py-3 rounded-lg outline-none border border-gray-700 focus:border-indigo-500" />
+                {error && <p className="text-red-400 text-sm">{error}</p>}
+                <div className="flex gap-3">
+                  <button onClick={handleSaveCourse} disabled={saving} className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2 rounded-full transition">{saving ? 'Saving...' : 'Save'}</button>
+                  <button onClick={() => { setEditing(false); setError('') }} className="text-gray-400 hover:text-white text-sm px-4 py-2 transition">Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex justify-between items-start gap-4">
+                <div>
+                  <h1 className="text-3xl font-bold mb-2">{course.title}</h1>
+                  <p className="text-gray-400 mb-5">{course.description}</p>
+                  <span className="text-2xl font-bold text-indigo-400">${course.price}</span>
+                </div>
+                {isOwner && (
+                  <button
+                    onClick={() => { setForm({ title: course.title, description: course.description, price: String(course.price) }); setEditing(true) }}
+                    className="text-sm text-gray-500 hover:text-white transition flex-shrink-0 border border-gray-700 hover:border-gray-500 px-3 py-1.5 rounded-lg"
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Instances */}

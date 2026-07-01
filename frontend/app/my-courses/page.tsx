@@ -306,18 +306,10 @@ export default function MyCourses() {
   )
 
   return (
-    <main className="min-h-screen bg-gray-950 text-white pb-16">
+    <main className="min-h-screen bg-gray-950 text-white pt-28 px-6 pb-16">
       <Navbar />
-
-      {/* Page header */}
-      <div className="bg-gradient-to-br from-indigo-950 to-gray-950 pt-28 pb-10 px-6 border-b border-gray-800">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold mb-1">My Courses</h1>
-          <p className="text-gray-400 text-sm">Manage your courses and enrolments</p>
-        </div>
-      </div>
-
-      <div className="max-w-4xl mx-auto px-6 pt-10 space-y-12">
+      <div className="max-w-4xl mx-auto space-y-12">
+        <h1 className="text-3xl font-bold">My Courses</h1>
 
         {/* ── Courses I Own ── */}
         <section>
