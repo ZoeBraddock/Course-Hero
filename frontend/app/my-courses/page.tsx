@@ -30,7 +30,7 @@ interface EnrolledInstance {
   end_date: string
   role: string
   payment_status: string
-  course: { id: string; title: string }
+  course: { id: string; title: string; banner_url: string | null; profile_pic_url: string | null }
 }
 
 type OwnedFilter = 'all' | 'upcoming'
@@ -89,7 +89,7 @@ export default function MyCourses() {
         .eq('owner_id', user.id),
       supabase
         .from('enrolment')
-        .select('id, role, status, course_instance_id, course_instance(course_instance_id, start_date, end_date, course(id, title)), orders(status)')
+        .select('id, role, status, course_instance_id, course_instance(course_instance_id, start_date, end_date, course(id, title, banner_url, profile_pic_url)), orders(status)')
         .eq('profile_id', user.id),
     ])
 
@@ -511,12 +511,20 @@ export default function MyCourses() {
             <h2 className="text-xl font-semibold mb-4 text-indigo-400">Courses I'm Supporting</h2>
             <div className="space-y-2">
               {supportingInstances.map(inst => (
-                <Link key={inst.course_instance_id} href={`/course/${inst.course.id}/instance/${inst.course_instance_id}`} className="flex justify-between items-center bg-gray-900 border border-gray-800 hover:bg-gray-800 rounded-xl px-6 py-4 transition">
-                  <div>
-                    <p className="font-medium">{inst.course.title}</p>
-                    <p className="text-sm text-gray-400">{formatDate(inst.start_date)} – {formatDate(inst.end_date)}</p>
+                <Link key={inst.course_instance_id} href={`/course/${inst.course.id}/instance/${inst.course_instance_id}`} className="bg-gray-900 border border-gray-800 hover:border-indigo-500 rounded-xl overflow-hidden transition block">
+                  <div className="relative h-24 bg-gray-800">
+                    {inst.course.banner_url && <img src={inst.course.banner_url} alt="" className="w-full h-full object-cover" />}
+                    {inst.course.profile_pic_url && (
+                      <img src={inst.course.profile_pic_url} alt="" className="absolute -bottom-4 left-4 w-8 h-8 rounded-full object-cover border-2 border-gray-900" />
+                    )}
                   </div>
-                  <span className="text-xs text-indigo-400">View →</span>
+                  <div className={`flex justify-between items-center px-4 py-3 ${inst.course.profile_pic_url ? 'pt-6' : 'pt-3'}`}>
+                    <div>
+                      <p className="font-medium">{inst.course.title}</p>
+                      <p className="text-sm text-gray-400">{formatDate(inst.start_date)} – {formatDate(inst.end_date)}</p>
+                    </div>
+                    <span className="text-xs text-indigo-400">View →</span>
+                  </div>
                 </Link>
               ))}
             </div>
@@ -552,14 +560,22 @@ export default function MyCourses() {
           ) : (
             <div className="space-y-2">
               {filteredEnrolled.map(inst => (
-                <Link key={inst.course_instance_id} href={`/course/${inst.course.id}/instance/${inst.course_instance_id}`} className="flex justify-between items-center bg-gray-900 border border-gray-800 hover:bg-gray-800 rounded-xl px-6 py-4 transition">
-                  <div>
-                    <p className="font-medium">{inst.course.title}</p>
-                    <p className="text-sm text-gray-400">{formatDate(inst.start_date)} – {formatDate(inst.end_date)}</p>
+                <Link key={inst.course_instance_id} href={`/course/${inst.course.id}/instance/${inst.course_instance_id}`} className="bg-gray-900 border border-gray-800 hover:border-indigo-500 rounded-xl overflow-hidden transition block">
+                  <div className="relative h-24 bg-gray-800">
+                    {inst.course.banner_url && <img src={inst.course.banner_url} alt="" className="w-full h-full object-cover" />}
+                    {inst.course.profile_pic_url && (
+                      <img src={inst.course.profile_pic_url} alt="" className="absolute -bottom-4 left-4 w-8 h-8 rounded-full object-cover border-2 border-gray-900" />
+                    )}
                   </div>
-                  <span className={`text-xs font-medium px-2 py-1 rounded-full ${inst.payment_status === 'paid' ? 'bg-green-900 text-green-400' : 'bg-yellow-900 text-yellow-400'}`}>
-                    {inst.payment_status}
-                  </span>
+                  <div className={`flex justify-between items-center px-4 py-3 ${inst.course.profile_pic_url ? 'pt-6' : 'pt-3'}`}>
+                    <div>
+                      <p className="font-medium">{inst.course.title}</p>
+                      <p className="text-sm text-gray-400">{formatDate(inst.start_date)} – {formatDate(inst.end_date)}</p>
+                    </div>
+                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${inst.payment_status === 'paid' ? 'bg-green-900 text-green-400' : 'bg-yellow-900 text-yellow-400'}`}>
+                      {inst.payment_status}
+                    </span>
+                  </div>
                 </Link>
               ))}
             </div>
