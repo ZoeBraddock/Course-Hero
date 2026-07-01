@@ -196,11 +196,9 @@ export default function MyCourses() {
   const handleSaveCourse = async () => {
     if (!courseForm.title.trim()) return setError('Title is required')
     if (!courseForm.price) return setError('Price is required')
+    if (!userId) return
     setSavingCourse(true)
     setError('')
-
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
 
     if (editingCourseId) {
       const { error: err } = await supabase
@@ -218,7 +216,7 @@ export default function MyCourses() {
     } else {
       const { data, error: err } = await supabase
         .from('course')
-        .insert({ title: courseForm.title, description: courseForm.description, price: parseFloat(courseForm.price), owner_id: user.id })
+        .insert({ title: courseForm.title, description: courseForm.description, price: parseFloat(courseForm.price), owner_id: userId })
         .select('id, title, description, price, created_at')
         .single()
 

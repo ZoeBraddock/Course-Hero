@@ -19,6 +19,8 @@ interface Course {
   name: string | null
   created_at: string
   course_instance: Instance[]
+  banner_url: string | null
+  profile_pic_url: string | null
 }
 
 type Filter = 'all' | 'upcoming'
@@ -39,7 +41,7 @@ export default function Home() {
   useEffect(() => {
     supabase
       .from('course')
-      .select('id, title, description, price, name, created_at, course_instance(start_date, end_date)')
+      .select('id, title, description, price, name, created_at, banner_url, profile_pic_url, course_instance(start_date, end_date)')
       .then(({ data, error }) => {
         if (error) setError(error.message)
         else setCourses((data as Course[]) ?? [])
@@ -123,17 +125,29 @@ export default function Home() {
               <Link
                 href={`/course/${course.id}`}
                 key={course.id}
-                className="bg-gray-900 rounded-2xl p-6 border border-gray-800 hover:border-indigo-500 transition block"
+                className="bg-gray-900 rounded-2xl border border-gray-800 hover:border-indigo-500 transition block overflow-hidden"
               >
-                <h3 className="text-xl font-semibold mb-2">{course.title}</h3>
-                <p className="text-gray-400 text-sm mb-4">{course.description}</p>
-                <div className="flex justify-between items-center mt-auto">
-                  <span className="text-indigo-400 text-sm">{course.name}</span>
-                  <div className="flex items-center gap-3">
-                    {hasUpcoming(course) && (
-                      <span className="text-xs text-green-400 font-medium">Upcoming</span>
-                    )}
-                    <span className="text-white font-bold">${course.price}</span>
+                {/* Banner */}
+                <div className="relative h-36 bg-gray-800">
+                  {course.banner_url
+                    ? <img src={course.banner_url} alt="" className="w-full h-full object-cover" />
+                    : <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900" />
+                  }
+                  {course.profile_pic_url && (
+                    <img src={course.profile_pic_url} alt="" className="absolute -bottom-5 left-5 w-10 h-10 rounded-full object-cover border-2 border-gray-900" />
+                  )}
+                </div>
+                <div className={`p-5 ${course.profile_pic_url ? 'pt-8' : 'pt-5'}`}>
+                  <h3 className="text-xl font-semibold mb-1">{course.title}</h3>
+                  <p className="text-gray-400 text-sm mb-4 line-clamp-2">{course.description}</p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-indigo-400 text-sm">{course.name}</span>
+                    <div className="flex items-center gap-3">
+                      {hasUpcoming(course) && (
+                        <span className="text-xs text-green-400 font-medium">Upcoming</span>
+                      )}
+                      <span className="text-white font-bold">${course.price}</span>
+                    </div>
                   </div>
                 </div>
               </Link>
