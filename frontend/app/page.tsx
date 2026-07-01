@@ -77,7 +77,7 @@ export default function Home() {
         <h1 className="text-5xl font-bold mb-4">Course Hero</h1>
         <p className="text-xl text-indigo-200 mb-2">Here to save you from course based admin!</p>
         <p className="text-gray-300 max-w-2xl mx-auto mb-8">
-          Sick of admin getting in the way of running a course?<br />
+          Sick and tired of admin getting in the way of running a course?<br />
           Say goodbye to the hassle and hello to more time for teaching and learning.<br />
           Sign up now and experience the freedom of a course without admin!
         </p>
