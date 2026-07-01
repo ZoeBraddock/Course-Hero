@@ -223,7 +223,7 @@ export default function MyCourses() {
         .single()
 
       if (err) { setError(err.message); setSavingCourse(false); return }
-      setOwnedCourses(prev => [{ ...data, course_instance: [] }, ...prev])
+      setOwnedCourses(prev => [{ ...data, course_instance: [], banner_url: null, profile_pic_url: null }, ...prev])
     }
 
     setCourseForm(emptyCourseForm)
