@@ -20,6 +20,8 @@ interface Course {
   price: number
   created_at: string
   course_instance: Instance[]
+  banner_url: string | null
+  profile_pic_url: string | null
 }
 
 interface EnrolledInstance {
@@ -63,6 +65,8 @@ export default function MyCourses() {
   const [savingInstance, setSavingInstance] = useState(false)
 
   const [error, setError] = useState('')
+  const [userId, setUserId] = useState<string | null>(null)
+  const [uploadingImage, setUploadingImage] = useState<{ courseId: string; type: 'banner' | 'profile_pic' } | null>(null)
 
   const [ownedFilter, setOwnedFilter] = useState<OwnedFilter>('all')
   const [ownedSort, setOwnedSort] = useState<OwnedSort>('recent')
@@ -76,11 +80,12 @@ export default function MyCourses() {
   const loadData = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/login'); return }
+    setUserId(user.id)
 
     const [ownedRes, enrolmentsRes] = await Promise.all([
       supabase
         .from('course')
-        .select('id, title, description, price, created_at, course_instance(course_instance_id, start_date, end_date, fb_group_invite_url)')
+        .select('id, title, description, price, created_at, banner_url, profile_pic_url, course_instance(course_instance_id, start_date, end_date, fb_group_invite_url)')
         .eq('owner_id', user.id),
       supabase
         .from('enrolment')
@@ -150,6 +155,41 @@ export default function MyCourses() {
     }
     return result
   }, [enrolledInstances, enrolledFilter, enrolledSort])
+
+  // ── Course image uploads ─────────────────────────────────
+
+  const handleCourseImageUpload = async (courseId: string, file: File, type: 'banner' | 'profile_pic') => {
+    if (!userId) return
+    setUploadingImage({ courseId, type })
+    setError('')
+
+    const ext = file.name.split('.').pop()
+    const path = `${userId}/${courseId}_${type}.${ext}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('course-images')
+      .upload(path, file, { upsert: true })
+
+    if (uploadError) { setError(uploadError.message); setUploadingImage(null); return }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('course-images')
+      .getPublicUrl(path)
+
+    const column = type === 'banner' ? 'banner_url' : 'profile_pic_url'
+
+    const { error: updateError } = await supabase
+      .from('course')
+      .update({ [column]: publicUrl })
+      .eq('id', courseId)
+
+    if (updateError) { setError(updateError.message); setUploadingImage(null); return }
+
+    setOwnedCourses(prev => prev.map(c =>
+      c.id === courseId ? { ...c, [column]: `${publicUrl}?t=${Date.now()}` } : c
+    ))
+    setUploadingImage(null)
+  }
 
   // ── Course CRUD ──────────────────────────────────────────
 
@@ -364,6 +404,34 @@ export default function MyCourses() {
                           <span className="text-indigo-400 font-bold">${course.price}</span>
                           <button onClick={() => handleEditCourse(course)} className="text-gray-400 hover:text-white text-sm transition">Edit</button>
                           <button onClick={() => handleDeleteCourse(course.id, course.title)} className="text-red-400 hover:text-red-300 text-sm transition">Delete</button>
+                        </div>
+                      </div>
+
+                      {/* Course images */}
+                      <div className="flex gap-3 mb-4">
+                        <div className="flex-1 relative h-28 bg-gray-800 rounded-lg overflow-hidden group">
+                          {course.banner_url
+                            ? <img src={course.banner_url} alt="Banner" className="w-full h-full object-cover" />
+                            : <div className="w-full h-full flex items-center justify-center text-gray-600 text-xs">No banner</div>
+                          }
+                          <label className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/50 transition cursor-pointer">
+                            <span className="text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition">
+                              {uploadingImage?.courseId === course.id && uploadingImage?.type === 'banner' ? 'Uploading...' : '📷 Set banner'}
+                            </span>
+                            <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleCourseImageUpload(course.id, f, 'banner'); e.target.value = '' }} />
+                          </label>
+                        </div>
+                        <div className="relative w-28 h-28 bg-gray-800 rounded-lg overflow-hidden group flex-shrink-0">
+                          {course.profile_pic_url
+                            ? <img src={course.profile_pic_url} alt="Profile" className="w-full h-full object-cover" />
+                            : <div className="w-full h-full flex items-center justify-center text-gray-600 text-xs text-center px-2">No profile pic</div>
+                          }
+                          <label className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/50 transition cursor-pointer">
+                            <span className="text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition text-center px-1">
+                              {uploadingImage?.courseId === course.id && uploadingImage?.type === 'profile_pic' ? 'Uploading...' : '📷 Set pic'}
+                            </span>
+                            <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleCourseImageUpload(course.id, f, 'profile_pic'); e.target.value = '' }} />
+                          </label>
                         </div>
                       </div>
 

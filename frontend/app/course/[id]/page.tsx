@@ -17,6 +17,8 @@ interface Course {
   description: string
   price: number
   course_instance: CourseInstance[]
+  banner_url: string | null
+  profile_pic_url: string | null
 }
 
 export default function CourseDetail() {
@@ -31,7 +33,7 @@ export default function CourseDetail() {
     const fetchCourse = async () => {
       const { data: courseData, error: courseError } = await supabase
         .from('course')
-        .select('id, title, description, price')
+        .select('id, title, description, price, banner_url, profile_pic_url')
         .eq('id', id)
         .single()
 
@@ -104,10 +106,22 @@ export default function CourseDetail() {
   return (
     <main className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
       <Navbar />
-      <div className="bg-gray-900 rounded-2xl p-10 border border-gray-800 w-full max-w-2xl">
-        <h1 className="text-3xl font-bold mb-4">{course.title}</h1>
-        <p className="text-gray-400 mb-6">{course.description}</p>
-        <p className="text-2xl font-bold text-indigo-400 mb-8">${course.price}</p>
+      <div className="bg-gray-900 rounded-2xl border border-gray-800 w-full max-w-2xl overflow-hidden">
+        {course.banner_url && (
+          <div className="relative h-48 bg-gray-800">
+            <img src={course.banner_url} alt="Banner" className="w-full h-full object-cover" />
+            {course.profile_pic_url && (
+              <img src={course.profile_pic_url} alt="Profile" className="absolute -bottom-8 left-8 w-16 h-16 rounded-full object-cover border-4 border-gray-900" />
+            )}
+          </div>
+        )}
+        <div className={`p-10 ${course.banner_url && course.profile_pic_url ? 'pt-12' : 'pt-10'}`}>
+          {!course.banner_url && course.profile_pic_url && (
+            <img src={course.profile_pic_url} alt="Profile" className="w-16 h-16 rounded-full object-cover mb-4" />
+          )}
+          <h1 className="text-3xl font-bold mb-4">{course.title}</h1>
+          <p className="text-gray-400 mb-6">{course.description}</p>
+          <p className="text-2xl font-bold text-indigo-400 mb-8">${course.price}</p>
 
         {course.course_instance.length > 1 && (
           <div className="mb-4">
@@ -150,6 +164,7 @@ export default function CourseDetail() {
             </button>
           </>
         )}
+        </div>
       </div>
     </main>
   )
