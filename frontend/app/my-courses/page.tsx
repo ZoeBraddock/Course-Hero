@@ -306,15 +306,23 @@ export default function MyCourses() {
   )
 
   return (
-    <main className="min-h-screen bg-gray-950 text-white pt-28 px-6 pb-16">
+    <main className="min-h-screen bg-gray-950 text-white pb-16">
       <Navbar />
-      <div className="max-w-4xl mx-auto space-y-12">
-        <h1 className="text-3xl font-bold">My Courses</h1>
+
+      {/* Page header */}
+      <div className="bg-gradient-to-br from-indigo-950 to-gray-950 pt-28 pb-10 px-6 border-b border-gray-800">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-3xl font-bold mb-1">My Courses</h1>
+          <p className="text-gray-400 text-sm">Manage your courses and enrolments</p>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-6 pt-10 space-y-12">
 
         {/* ── Courses I Own ── */}
         <section>
           <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
-            <h2 className="text-xl font-semibold text-indigo-400">Courses I Own</h2>
+            <h2 className="text-xl font-semibold">Courses I Own</h2>
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex gap-1">
                 <button className={ownedFilter === 'all' ? activeBtn : inactiveBtn} onClick={() => setOwnedFilter('all')}>All</button>
@@ -475,7 +483,7 @@ export default function MyCourses() {
         {/* ── Courses I'm Supporting ── */}
         {supportingInstances.length > 0 && (
           <section>
-            <h2 className="text-xl font-semibold mb-4 text-indigo-400">Courses I'm Supporting</h2>
+            <h2 className="text-xl font-semibold mb-4">Courses I'm Supporting</h2>
             <div className="space-y-2">
               {supportingInstances.map(inst => (
                 <Link key={inst.course_instance_id} href={`/course/${inst.course.id}/instance/${inst.course_instance_id}`} className="flex items-center gap-4 bg-gray-900 border border-gray-800 hover:border-indigo-500 rounded-xl overflow-hidden transition px-4 py-3">
@@ -496,7 +504,7 @@ export default function MyCourses() {
         {/* ── Courses I'm Enrolled In ── */}
         <section>
           <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
-            <h2 className="text-xl font-semibold text-indigo-400">Courses I'm Enrolled In</h2>
+            <h2 className="text-xl font-semibold">Courses I'm Enrolled In</h2>
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex gap-1">
                 <button className={enrolledFilter === 'all' ? activeBtn : inactiveBtn} onClick={() => setEnrolledFilter('all')}>All</button>
